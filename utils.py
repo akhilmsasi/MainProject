@@ -2,6 +2,7 @@ import mysql.connector
 import os
 from enum import IntEnum
 
+# 1. Define the Enum
 class RecordingState(IntEnum):
     NO_RECORDING = 0
     NORMAL_RECORDING = 1
@@ -10,8 +11,7 @@ class RecordingState(IntEnum):
     HARD_BRAKING = 4
     ALARM = 5
 
-# --- NEW: 2D Array for TVM Random Data ---
-# Structure: [Latitude, Longitude, Place Name, Road Name]
+# 2. Define the Locations
 TVM_LOCATIONS = [
     [8.4889, 76.9440, "East Fort", "MG Road"],
     [8.5464, 76.9063, "Lulu Mall", "NH 66 Bypass"],
@@ -30,6 +30,7 @@ TVM_LOCATIONS = [
     [8.6000, 76.9200, "Vembayam", "Main Central Road"]
 ]
 
+# 3. Define Config
 DB_CONFIG = {
     "host": "127.0.0.1",
     "user": "root",
@@ -40,5 +41,6 @@ DB_CONFIG = {
 OUTPUT_PATH = r"C:/xampp/htdocs/Videos"
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
+# 4. Define the Function
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)

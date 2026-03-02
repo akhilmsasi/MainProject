@@ -53,7 +53,7 @@ class Secure360GUI:
             # Assuming your table has a 'gear' column
             cursor.execute("UPDATE recording_status SET gear = %s", (gear_val,))
             conn.commit()
-            conn.close()
+            #conn.close()
             print(f"⚙️ Gear shifted to: {selection} ({gear_val})")
         except Exception as e:
             print(f"Gear Update Error: {e}")
