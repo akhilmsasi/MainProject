@@ -6,26 +6,38 @@ class Secure360GUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Secure360 Master Control")
-        self.root.geometry("300x250")
+        self.root.geometry("400x350")
         
         self.processes = []
         self.is_on = False
 
         # --- System Power Button ---
         self.btn_power = tk.Button(root, text="SYSTEM POWER: OFF", bg="red", fg="white", 
-                                   command=self.toggle_power, width=25, height=3, font=('Arial', 10, 'bold'))
+                                   command=self.toggle_power, width=30, height=3, font=('Arial', 10, 'bold'))
         self.btn_power.pack(pady=20)
 
-        # --- Manual Record Toggle Button ---
-        self.btn_manual = tk.Button(root, text="START MANUAL RECORDING", bg="gray", fg="white", 
-                                    command=self.toggle_manual_record, width=25, height=2, state=tk.DISABLED)
-        self.btn_manual.pack(pady=10)
+        # --- Event Selection Dropdown ---
+        tk.Label(root, text="Select Event Type:", font=('Arial', 9)).pack()
+        
+        # Create a list of names from your RecordingState Enum
+        self.event_options = [state.name for state in RecordingState if state.value != 0]
+        self.selected_event = tk.StringVar(root)
+        self.selected_event.set(self.event_options[0]) # Default to NORMAL_RECORDING
 
-        # Start the background checker
+        self.drop_menu = tk.OptionMenu(root, self.selected_event, *self.event_options)
+        self.drop_menu.config(width=25, state=tk.DISABLED)
+        self.drop_menu.pack(pady=10)
+
+        # --- Recording Toggle Button ---
+        self.btn_record = tk.Button(root, text="START RECORDING", bg="gray", fg="white", 
+                                    command=self.toggle_manual_record, width=30, height=2, state=tk.DISABLED)
+        self.btn_record.pack(pady=20)
+
+        # Start the background sync checker
         self.check_db_status()
 
     def check_db_status(self):
-        """Periodically checks the DB to keep the GUI buttons in sync with the recorder."""
+        """Syncs GUI button state with Database changes (e.g., auto-stop after 60s)."""
         if self.is_on:
             try:
                 conn = get_db_connection()
@@ -36,17 +48,12 @@ class Secure360GUI:
 
                 if result:
                     db_status = result[0]
-                    # If DB is 0 but button says STOP, sync it back
-                    if db_status == 0 and self.btn_manual["text"] == "STOP RECORDING":
-                        self.btn_manual.config(text="START MANUAL RECORDING", bg="blue")
-                        print("🔄 GUI synced: Recording finished (60s limit reached).")
-                    # If DB is 1 but button says START, sync it forward
-                    elif db_status == 1 and self.btn_manual["text"] == "START MANUAL RECORDING":
-                        self.btn_manual.config(text="STOP RECORDING", bg="orange")
+                    if db_status == 0 and self.btn_record["text"] == "STOP RECORDING":
+                        self.btn_record.config(text="START RECORDING", bg="blue")
+                        self.drop_menu.config(state=tk.NORMAL) # Re-enable dropdown
             except Exception as e:
                 print(f"Sync Error: {e}")
 
-        # Check again in 1000ms (1 second)
         self.root.after(1000, self.check_db_status)
 
     def toggle_power(self):
@@ -58,18 +65,18 @@ class Secure360GUI:
             
             self.is_on = True
             self.btn_power.config(text="SYSTEM POWER: ON", bg="green")
-            self.btn_manual.config(state=tk.NORMAL, bg="blue", text="START MANUAL RECORDING")
+            self.btn_record.config(state=tk.NORMAL, bg="blue")
+            self.drop_menu.config(state=tk.NORMAL)
         else:
             for p in self.processes:
                 p.terminate()
-            
             self.update_db_status(0, 0)
             self.is_on = False
             self.btn_power.config(text="SYSTEM POWER: OFF", bg="red")
-            self.btn_manual.config(state=tk.DISABLED, bg="gray")
+            self.btn_record.config(state=tk.DISABLED, bg="gray")
+            self.drop_menu.config(state=tk.DISABLED)
 
     def toggle_manual_record(self):
-        """Toggles status between 1 and 0 in the DB."""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -79,10 +86,16 @@ class Secure360GUI:
             if result:
                 current_status = result[0]
                 if current_status == 0:
-                    cursor.execute("UPDATE recording_status SET status = 1, EventType = %s", 
-                                   (int(RecordingState.NORMAL_RECORDING),))
+                    # Get integer value from Enum based on selected string
+                    event_name = self.selected_event.get()
+                    event_val = RecordingState[event_name].value
+                    
+                    cursor.execute("UPDATE recording_status SET status = 1, EventType = %s", (event_val,))
+                    self.btn_record.config(text="STOP RECORDING", bg="orange")
+                    self.drop_menu.config(state=tk.DISABLED) # Lock dropdown during recording
                 else:
                     cursor.execute("UPDATE recording_status SET status = 0")
+                    # Button will be reset by check_db_status()
                 conn.commit()
             conn.close()
         except Exception as e:
