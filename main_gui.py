@@ -11,42 +11,82 @@ class Secure360GUI:
         self.processes = []
         self.is_on = False
 
+        # --- System Power Button ---
         self.btn_power = tk.Button(root, text="SYSTEM POWER: OFF", bg="red", fg="white", 
-                                   command=self.toggle_power, width=25, height=3)
+                                   command=self.toggle_power, width=25, height=3, font=('Arial', 10, 'bold'))
         self.btn_power.pack(pady=20)
 
+        # --- Manual Record Toggle Button ---
         self.btn_manual = tk.Button(root, text="START MANUAL RECORDING", bg="gray", fg="white", 
-                                    command=self.manual_record, width=25, height=2, state=tk.DISABLED)
+                                    command=self.toggle_manual_record, width=25, height=2, state=tk.DISABLED)
         self.btn_manual.pack(pady=10)
 
     def toggle_power(self):
         if not self.is_on:
-            # Start Services
+            # 1. Reset DB Status to clean state
+            self.update_db_status(0, 0)
+            
+            # 2. Start Services
+            # Note: Ensure these .py files are in the same directory
             p1 = subprocess.Popen(['python', 'recording_service.py'])
             p2 = subprocess.Popen(['python', 'data_monitor.py'])
             self.processes = [p1, p2]
             
             self.is_on = True
             self.btn_power.config(text="SYSTEM POWER: ON", bg="green")
-            self.btn_manual.config(state=tk.NORMAL, bg="blue")
+            self.btn_manual.config(state=tk.NORMAL, bg="blue", text="START MANUAL RECORDING")
         else:
-            # Kill Services
+            # 1. Kill Services
             for p in self.processes:
                 p.terminate()
             
+            # 2. Clean up DB
+            self.update_db_status(0, 0)
+            
             self.is_on = False
             self.btn_power.config(text="SYSTEM POWER: OFF", bg="red")
-            self.btn_manual.config(state=tk.DISABLED, bg="gray")
+            self.btn_manual.config(state=tk.DISABLED, bg="gray", text="START MANUAL RECORDING")
 
-    def manual_record(self):
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        # Set status=1 and EventType=1 (NORMAL_RECORDING)
-        cursor.execute("UPDATE recording_status SET status = 1, EventType = %s", 
-                       (int(RecordingState.NORMAL_RECORDING),))
-        conn.commit()
-        conn.close()
-        print("🖱 Manual Record Triggered via GUI")
+    def toggle_manual_record(self):
+        """Reads current DB status and toggles between Start (1) and Stop (0)."""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Fetch current status directly from the table
+            cursor.execute("SELECT status FROM recording_status LIMIT 1")
+            result = cursor.fetchone()
+            
+            if result:
+                current_status = result[0]
+                
+                if current_status == 0:
+                    # Logic: START RECORDING
+                    cursor.execute("UPDATE recording_status SET status = 1, EventType = %s", 
+                                   (int(RecordingState.NORMAL_RECORDING),))
+                    self.btn_manual.config(text="STOP RECORDING", bg="orange")
+                    print("🔴 Recording Triggered (Pre-buffer + Post-buffer active)")
+                else:
+                    # Logic: STOP RECORDING
+                    cursor.execute("UPDATE recording_status SET status = 0")
+                    self.btn_manual.config(text="START MANUAL RECORDING", bg="blue")
+                    print("⏹ Stop Signal Sent (Saving File...)")
+                
+                conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"GUI DB Error: {e}")
+
+    def update_db_status(self, status, event_type):
+        """Helper to reset database state."""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE recording_status SET status = %s, EventType = %s", (status, event_type))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"DB Reset Error: {e}")
 
 if __name__ == "__main__":
     root = tk.Tk()
