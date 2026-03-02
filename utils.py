@@ -10,6 +10,26 @@ class RecordingState(IntEnum):
     HARD_BRAKING = 4
     ALARM = 5
 
+# --- NEW: 2D Array for TVM Random Data ---
+# Structure: [Latitude, Longitude, Place Name, Road Name]
+TVM_LOCATIONS = [
+    [8.4889, 76.9440, "East Fort", "MG Road"],
+    [8.5464, 76.9063, "Lulu Mall", "NH 66 Bypass"],
+    [8.5241, 76.9366, "Pattom", "MC Road"],
+    [8.5581, 76.8814, "Technopark Phase 1", "Kazhakkoottam Road"],
+    [8.4731, 76.9191, "Shangumugham Beach", "Airport Road"],
+    [8.5068, 76.9554, "Vazhuthacaud", "Museum-Bakery Road"],
+    [8.5834, 76.8653, "Sainik School", "Kazhakkootam-Kilimanoor Road"],
+    [8.4842, 76.9512, "Thampanoor", "Station Road"],
+    [8.5300, 76.9200, "Medical College", "Cosmopolitan Hospital Road"],
+    [8.4981, 76.9654, "Jagathy", "Thycaud-Jagathy Road"],
+    [8.5600, 76.8400, "Kadinamkulam", "Coastal Road"],
+    [8.5110, 76.9380, "Palayam", "University College Road"],
+    [8.5200, 77.0100, "Vattiyoorkavu", "Central Polytechnic Road"],
+    [8.4500, 76.9800, "Vizhinjam Port", "Harbour Road"],
+    [8.6000, 76.9200, "Vembayam", "Main Central Road"]
+]
+
 DB_CONFIG = {
     "host": "127.0.0.1",
     "user": "root",
