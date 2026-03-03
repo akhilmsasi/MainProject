@@ -41,6 +41,70 @@ DB_CONFIG = {
 OUTPUT_PATH = r"C:/xampp/htdocs/Videos"
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
-# 4. Define the Function
+# 4. Database Functions
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
+
+def initialize_database():
+    """Creates the database and tables if they do not exist."""
+    try:
+        # Connect without DB selected to create it
+        temp_config = DB_CONFIG.copy()
+        db_name = temp_config.pop("database")
+        conn = mysql.connector.connect(**temp_config)
+        cursor = conn.cursor()
+        
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+        cursor.execute(f"USE {db_name}")
+
+        # Incident Records Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS incidentrecords (
+                id VARCHAR(100) PRIMARY KEY,
+                incident_date DATE,
+                incident_time TIME,
+                title VARCHAR(255),
+                locationLat DOUBLE DEFAULT 0.0,
+                locationLong DOUBLE DEFAULT 0.0,
+                fileUploadedStatus INT DEFAULT 0,
+                placeCityName VARCHAR(100),
+                roadName VARCHAR(100),
+                vehicleSpeed FLOAT DEFAULT 0.0,
+                incidentType INT DEFAULT 0,
+                gear INT DEFAULT 0,
+                filepath VARCHAR(500),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Event Status Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS event_status (
+                Eventtype INT DEFAULT 0,
+                Eventstatus INT DEFAULT 0
+            )
+        """)
+
+        # Recording Status Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS recording_status (
+                status INT DEFAULT 0,
+                EventType INT DEFAULT 0,
+                gear INT DEFAULT 0
+            )
+        """)
+
+        # Insert initial rows if empty
+        cursor.execute("SELECT COUNT(*) FROM event_status")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO event_status (Eventtype, Eventstatus) VALUES (0, 0)")
+            
+        cursor.execute("SELECT COUNT(*) FROM recording_status")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO recording_status (status, EventType, gear) VALUES (0, 0, 0)")
+
+        conn.commit()
+        conn.close()
+        print("✅ Database initialization complete.")
+    except Exception as e:
+        print(f"❌ Database Setup Error: {e}")

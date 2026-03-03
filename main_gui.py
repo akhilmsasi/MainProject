@@ -1,6 +1,6 @@
 import tkinter as tk
 import subprocess
-from utils import get_db_connection, RecordingState
+from utils import get_db_connection, RecordingState, initialize_database
 
 class Secure360GUI:
     def __init__(self, root):
@@ -60,6 +60,7 @@ class Secure360GUI:
 
     def toggle_power(self):
         if not self.is_on:
+            initialize_database()
             self.update_db_status(0, 0, 0) # status, event, gear
             p1 = subprocess.Popen(['python', 'recording_service.py'])
             p2 = subprocess.Popen(['python', 'data_monitor.py'])
