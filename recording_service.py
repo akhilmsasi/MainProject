@@ -4,6 +4,8 @@ import datetime
 import time
 import os
 import random
+import mediapipe as mp
+from face_detection.visualize import visualize
 from utils import get_db_connection, RecordingState, OUTPUT_PATH, TVM_LOCATIONS
 
 def save_video(frames, event_type_val):
@@ -65,6 +67,21 @@ def reset_db_status():
         print(f"Reset Error: {e}")
 
 def run_recorder():
+    # Initialize MediaPipe Face Detector
+    BaseOptions = mp.tasks.BaseOptions
+    FaceDetectorOptions = mp.tasks.vision.FaceDetectorOptions
+    FaceDetector = mp.tasks.vision.FaceDetector
+    VisionRunningMode = mp.tasks.vision.RunningMode
+
+    # The model path based on the structure provided
+    model_path = os.path.join(os.path.dirname(__file__), 'face_detection', 'blaze_face_short_range.tflite')
+    
+    options = FaceDetectorOptions(
+        base_options=BaseOptions(model_asset_path=model_path),
+        running_mode=VisionRunningMode.IMAGE
+    )
+    detector = FaceDetector.create_from_options(options)
+    
     cap = cv2.VideoCapture(0)
     prev_frame_time = 0
     target_fps = 20.0
@@ -75,6 +92,7 @@ def run_recorder():
     active_frames = []
     is_recording = False
     current_event = 0
+    face_detection_active = False
 
     print("📹 Recorder Service: ACTIVE.")
 
@@ -111,6 +129,15 @@ def run_recorder():
                 active_frames = []
                 reset_db_status()
 
+            # --- Check face detection toggle from event_status table ---
+            cursor.execute("SELECT Eventstatus FROM event_status WHERE Eventtype = 2 LIMIT 1")
+            face_row = cursor.fetchone()
+            if face_row:
+                # PhpMyAdmin sometimes returns 1/0 for INT fields
+                face_detection_active = bool(face_row['Eventstatus'])
+            else:
+               face_detection_active = False
+
         except Exception as e:
             print(f"DB Loop Error: {e}")
 
@@ -123,6 +150,14 @@ def run_recorder():
         display_frame = frame.copy()
         cv2.putText(display_frame, f"FPS: {int(fps_val)}", (10, 30), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        
+        # --- Apply Face Detection if active ---
+        if face_detection_active:
+            # Convert frame to mp.Image format
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=display_frame)
+            detection_result = detector.detect(mp_image)
+            # Visualize bounding boxes and keypoints on the image
+            display_frame = visualize(display_frame, detection_result)
         
         if is_recording:
             # Now 'w' is defined correctly
