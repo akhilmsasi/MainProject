@@ -95,10 +95,14 @@ def initialize_database():
         """)
 
         # Insert initial rows if empty
-        cursor.execute("SELECT COUNT(*) FROM event_status")
-        if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO event_status (Eventtype, Eventstatus) VALUES (0, 0)")
-            
+        default_events = [2, 3, 4, 5, 6]
+        for event_type in default_events:
+            cursor.execute("SELECT COUNT(*) FROM event_status WHERE Eventtype = %s", (event_type,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("INSERT INTO event_status (Eventtype, Eventstatus) VALUES (%s, 0)", (event_type,))
+                print(f"➕ Added default EventType {event_type} to event_status")
+
+
         cursor.execute("SELECT COUNT(*) FROM recording_status")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO recording_status (status, EventType, gear) VALUES (0, 0, 0)")
