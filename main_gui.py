@@ -2,7 +2,15 @@ import tkinter as tk
 import subprocess
 import datetime
 from tkinter import messagebox, ttk
-from utils import db_ref, RecordingState, initialize_database, get_db_connection
+from utils import (
+    db_ref,
+    RecordingState,
+    initialize_database,
+    get_db_connection,
+    sync_user_recording_status_to_firebase,
+    sync_recording_status_sql_to_firebase,
+    write_user_recording_status,
+)
 from firebase_manager import FirebaseManager
 from firebase_admin import db
 
@@ -99,7 +107,11 @@ class Secure360GUI:
         self.btn_refresh_users = tk.Button(root, text="Refresh Users", command=self.refresh_user_details, width=30)
         self.btn_refresh_users.pack(pady=5)
 
+        self.btn_sync_status = tk.Button(root, text="Sync RecordingStatus → Firebase", command=self.sync_recording_status, width=30)
+        self.btn_sync_status.pack(pady=5)
+
         # Run initial check
+        self._firebase_was_online = False
         self.check_cloud_connection()
         # Load user details once at startup
         self.refresh_user_details()
@@ -112,12 +124,29 @@ class Secure360GUI:
             _ = db_ref.child('connection_test').get()
             # If no exception was raised, we consider the DB reachable.
             self.lbl_fb_status.config(text="FIREBASE: ONLINE", fg="green")
+            now_online = True
         except Exception as e:
             # Print the exception to console for easier debugging
             print("Firebase connectivity check error:", e)
             self.lbl_fb_status.config(text="FIREBASE: OFFLINE", fg="red")
+            now_online = False
         
-        # Re-check every 5 seconds
+        # If we just transitioned from offline -> online, perform syncs
+        if now_online and not getattr(self, '_firebase_was_online', False):
+            print('Firebase came online — syncing SQL recording status to RTDB...')
+            # Sync global recording_status into RTDB root
+            try:
+                sync_recording_status_sql_to_firebase(propagate_to_users=False)
+            except Exception as e:
+                print('Error during recording_status sync:', e)
+            # Optionally also ensure per-user nodes exist (non-destructive)
+            try:
+                sync_user_recording_status_to_firebase()
+            except Exception as e:
+                print('Error during per-user recording_status sync:', e)
+
+        # Save current state and re-check every 5 seconds
+        self._firebase_was_online = now_online
         self.root.after(5000, self.check_cloud_connection)
 
     def test_firebase_connection(self):
@@ -154,6 +183,14 @@ class Secure360GUI:
                 pass
             return []
 
+    def sync_recording_status(self):
+        """Call the utils helper to sync SQL users into Firebase under users/{username}/recording_status."""
+        try:
+            sync_user_recording_status_to_firebase()
+            messagebox.showinfo("Sync Complete", "User recording_status nodes have been synced to Firebase.")
+        except Exception as e:
+            messagebox.showerror("Sync Error", f"Failed to sync recording_status: {e}")
+
     def refresh_user_details(self):
         """Reload the user-details Treeview with fresh data."""
         rows = self.fetch_user_details()
@@ -183,8 +220,16 @@ class Secure360GUI:
         if not self.is_on: return
         gear_val = self.gear_options[selection]
         # Update Firebase via Manager
-        self.fm.update_cloud_status(status=0, event_type=0, gear=gear_val)
-        print(f"⚙️ Gear Update: {selection}")
+        username = self.get_selected_username()
+        if not username:
+            messagebox.showwarning("No user selected", "Please select a user from the list to update gear.")
+            return
+        # Update per-user recording_status gear
+        try:
+            write_user_recording_status(username, status=None, event_type=None, gear=gear_val)
+        except Exception as e:
+            print(f"Failed to update gear for {username}: {e}")
+        print(f"⚙️ Gear Update: {selection} for user {username}")
 
     def toggle_power(self):
         if not self.is_on:
@@ -210,16 +255,45 @@ class Secure360GUI:
 
     def toggle_manual_record(self):
         try:
-            current_status = db_ref.child('recording_status/status').get()
-            if current_status == 0:
+            username = self.get_selected_username()
+            if not username:
+                messagebox.showwarning("No user selected", "Please select a user from the list to start/stop recording.")
+                return
+
+            # Read per-user recording status
+            current_status = db_ref.child('users').child(username).child('recording_status').child('status').get()
+            if current_status == 0 or current_status is None:
                 event_val = RecordingState[self.selected_event.get()].value
-                self.fm.update_cloud_status(status=1, event_type=event_val, gear=self.gear_options[self.selected_gear.get()])
+                write_user_recording_status(username, status=1, event_type=event_val, gear=self.gear_options[self.selected_gear.get()])
                 self.btn_record.config(text="STOP RECORDING", bg="orange")
             else:
-                self.fm.update_cloud_status(status=0, event_type=0, gear=self.gear_options[self.selected_gear.get()])
+                write_user_recording_status(username, status=0, event_type=0, gear=self.gear_options[self.selected_gear.get()])
                 self.btn_record.config(text="START RECORDING", bg="blue")
         except Exception as e:
             print(f"Toggle Error: {e}")
+
+    def get_selected_username(self):
+        try:
+            sel = self.user_tree.selection()
+            if not sel:
+                # No selection: take the first row in the tree if present
+                children = self.user_tree.get_children()
+                if children:
+                    first = children[0]
+                    vals = self.user_tree.item(first, 'values')
+                    return vals[0]
+                # As a fallback, attempt to fetch from DB and return the first username
+                rows = self.fetch_user_details()
+                if rows:
+                    return rows[0].get('username')
+                return None
+            item = sel[0]
+            vals = self.user_tree.item(item, 'values')
+            # username is the first column
+            return vals[0]
+        except Exception as e:
+            print(f"Error getting selected username: {e}")
+            return None
 
 if __name__ == "__main__":
     import tkinter.messagebox

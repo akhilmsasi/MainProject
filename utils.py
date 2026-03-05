@@ -127,3 +127,122 @@ def initialize_database():
         print("✅ Database initialization complete.")
     except Exception as e:
         print(f"❌ Database Setup Error: {e}")
+
+
+def sync_user_recording_status_to_firebase():
+    """Ensure each user in the SQL `Userdetails` table has a `recording_status`
+    node under `/users/{username}/recording_status` in the Firebase RTDB.
+
+    Behavior / Assumptions:
+    - Reads `username` from `Userdetails` in the configured database (secure360).
+    - If a user's `/users/{username}/recording_status` node does not exist, this
+      function initializes it to the default: {status:0, EventType:0, gear:0}.
+    - If the node already exists, it is left unchanged.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM Userdetails")
+        rows = cursor.fetchall()
+        usernames = [r[0] for r in rows if r and r[0]]
+        cursor.close()
+        conn.close()
+
+        for uname in usernames:
+            try:
+                user_ref = db_ref.child('users').child(str(uname))
+                status_ref = user_ref.child('recording_status')
+                # only initialize if not present
+                if not status_ref.get():
+                    status_ref.set({"status": 0, "EventType": 0, "gear": 0})
+                    print(f"Initialized recording_status for user: {uname}")
+                else:
+                    print(f"recording_status already present for user: {uname}")
+            except Exception as e:
+                print(f"Failed to sync user {uname}: {e}")
+        print("✅ User recording_status sync complete.")
+    except Exception as e:
+        print(f"❌ Error while syncing user recording_status to Firebase: {e}")
+
+
+def write_user_recording_status(username, status=0, event_type=0, gear=0):
+    """Write a recording_status object under /users/{username}/recording_status in RTDB."""
+    try:
+        if not username:
+            raise ValueError("username is required")
+        # Build partial payload only for the keys that are not None.
+        payload = {}
+        if status is not None:
+            payload['status'] = int(status)
+        if event_type is not None:
+            payload['EventType'] = int(event_type)
+        if gear is not None:
+            payload['gear'] = int(gear)
+
+        if not payload:
+            # Nothing to update
+            print(f"No recording_status fields provided to update for {username}.")
+            return True
+
+        # Use update() so we don't overwrite other fields unintentionally
+        db_ref.child('users').child(str(username)).child('recording_status').update(payload)
+        print(f"Updated recording_status for {username}: {payload}")
+        return True
+    except Exception as e:
+        print(f"Failed to write recording_status for {username}: {e}")
+        return False
+
+
+def sync_recording_status_sql_to_firebase(propagate_to_users=False):
+    """Sync the local SQL `recording_status` (single-row) into Firebase.
+
+    - Reads the first row from `recording_status` table (status, EventType, gear).
+    - Writes it to the RTDB at `/recording_status`.
+    - If propagate_to_users=True, also applies the same status to every
+      `/users/{username}/recording_status` node (creates if missing).
+    Returns True on success, False on failure.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT status, EventType, gear FROM recording_status LIMIT 1")
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not row:
+            print("No recording_status row found in SQL. Skipping sync.")
+            return False
+
+        status_val, event_val, gear_val = row[0], row[1], row[2]
+        payload = {"status": int(status_val or 0), "EventType": int(event_val or 0), "gear": int(gear_val or 0)}
+
+        # Do NOT write a top-level /recording_status node — only write under users/{username}/recording_status
+        if propagate_to_users:
+            # fetch usernames and propagate
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT username FROM Userdetails")
+                rows = cursor.fetchall()
+                cursor.close()
+                conn.close()
+
+                usernames = [r[0] for r in rows if r and r[0]]
+                for uname in usernames:
+                    try:
+                        user_ref = db_ref.child('users').child(str(uname)).child('recording_status')
+                        user_ref.set(payload)
+                        print(f"Propagated recording_status to user {uname}")
+                    except Exception as e:
+                        print(f"Failed to propagate to {uname}: {e}")
+            except Exception as e:
+                print(f"Failed to fetch usernames for propagation: {e}")
+
+        else:
+            print("sync_recording_status_sql_to_firebase completed — no per-user propagation requested.")
+
+        return True
+    except Exception as e:
+        print(f"Error syncing recording_status from SQL to Firebase: {e}")
+        return False
