@@ -109,6 +109,17 @@ def initialize_database():
             )
         """)
 
+        # Per-user recording status (stores per-username status mirrored to Firebase)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_recording_status (
+                username VARCHAR(100) PRIMARY KEY,
+                status INT DEFAULT 0,
+                EventType INT DEFAULT 0,
+                gear INT DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """)
+
         # Insert initial rows if empty
         default_events = [2, 3, 4, 5, 6]
         for event_type in default_events:
@@ -191,6 +202,108 @@ def write_user_recording_status(username, status=0, event_type=0, gear=0):
     except Exception as e:
         print(f"Failed to write recording_status for {username}: {e}")
         return False
+
+
+def update_user_recording_status(username, status=None, event_type=None, gear=None):
+    """Update recording status in the SQL `recording_status` table and in Firebase for a user.
+
+    Behavior:
+    - Reads the single-row `recording_status` table to get existing values.
+    - Updates that table with any provided fields (status/EventType/gear).
+    - Writes the computed values to `/users/{username}/recording_status` in Firebase.
+
+    Returns (sql_ok: bool, firebase_ok: bool).
+    """
+    if not username:
+        print("update_user_recording_status: username required")
+        return (False, False)
+
+    sql_ok = False
+    firebase_ok = False
+
+    # Safe defaults
+    existing_status = 0
+    existing_event = 0
+    existing_gear = 0
+
+    # Read existing (single-row) recording_status
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT status, EventType, gear FROM recording_status LIMIT 1")
+        row = cursor.fetchone()
+        if row:
+            existing_status = row.get('status') if row.get('status') is not None else 0
+            existing_event = row.get('EventType') if row.get('EventType') is not None else 0
+            existing_gear = row.get('gear') if row.get('gear') is not None else 0
+    except Exception as e:
+        print(f"Warning: could not read existing SQL recording_status: {e}")
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    # Compute new values (prefer provided values)
+    try:
+        new_status = int(status) if status is not None else int(existing_status)
+    except Exception:
+        new_status = int(existing_status)
+    try:
+        new_event = int(event_type) if event_type is not None else int(existing_event)
+    except Exception:
+        new_event = int(existing_event)
+    try:
+        new_gear = int(gear) if gear is not None else int(existing_gear)
+    except Exception:
+        new_gear = int(existing_gear)
+
+    # Write back to the single-row recording_status table
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Ensure at least one row exists; if not, insert
+        cursor.execute("SELECT COUNT(*) FROM recording_status")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.execute(
+                "INSERT INTO recording_status (status, EventType, gear) VALUES (%s, %s, %s)",
+                (new_status, new_event, new_gear)
+            )
+        else:
+            cursor.execute(
+                "UPDATE recording_status SET status = %s, EventType = %s, gear = %s",
+                (new_status, new_event, new_gear)
+            )
+        conn.commit()
+        sql_ok = True
+        print(f"Updated SQL recording_status: status={new_status}, EventType={new_event}, gear={new_gear}")
+    except Exception as e:
+        print(f"Failed to update SQL recording_status: {e}")
+    finally:
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    # Update Firebase per-user recording_status
+    try:
+        payload = {'status': new_status, 'EventType': new_event, 'gear': new_gear}
+        db_ref.child('users').child(str(username)).child('recording_status').update(payload)
+        firebase_ok = True
+        print(f"Updated Firebase recording_status for {username}: {payload}")
+    except Exception as e:
+        print(f"Failed to update Firebase recording_status for {username}: {e}")
+
+    return (sql_ok, firebase_ok)
 
 
 def sync_recording_status_sql_to_firebase(propagate_to_users=False):

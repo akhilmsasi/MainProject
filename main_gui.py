@@ -10,6 +10,7 @@ from utils import (
     sync_user_recording_status_to_firebase,
     sync_recording_status_sql_to_firebase,
     write_user_recording_status,
+    update_user_recording_status,
 )
 from firebase_manager import FirebaseManager
 from firebase_admin import db
@@ -110,6 +111,16 @@ class Secure360GUI:
         self.btn_sync_status = tk.Button(root, text="Sync RecordingStatus → Firebase", command=self.sync_recording_status, width=30)
         self.btn_sync_status.pack(pady=5)
 
+        # Quick test button to force a per-user SQL+Firebase update (helps debug local DB updates)
+        self.btn_test_sql = tk.Button(root, text="Test SQL Update (single user)", command=self.test_sql_update, width=30)
+        self.btn_test_sql.pack(pady=5)
+
+        # Ensure DB tables exist so updates won't fail due to missing tables
+        try:
+            initialize_database()
+        except Exception as e:
+            print(f"Warning: initialize_database() failed at startup: {e}")
+
         # Run initial check
         self._firebase_was_online = False
         self.check_cloud_connection()
@@ -191,6 +202,26 @@ class Secure360GUI:
         except Exception as e:
             messagebox.showerror("Sync Error", f"Failed to sync recording_status: {e}")
 
+    def test_sql_update(self):
+        """Helper invoked by a GUI button to run update_user_recording_status for the first user and show results."""
+        try:
+            rows = self.fetch_user_details()
+            if not rows:
+                messagebox.showwarning("No users", "No users found in Userdetails to test.")
+                return
+            username = rows[0].get('username')
+            if not username:
+                messagebox.showwarning("No username", "First user has no username.")
+                return
+            # Run an example update: toggle status=1 for test
+            sql_ok, fb_ok = update_user_recording_status(username, status=1, event_type=1, gear=self.gear_options[self.selected_gear.get()])
+            msg = f"Test update for {username}: SQL={'OK' if sql_ok else 'FAIL'}, Firebase={'OK' if fb_ok else 'FAIL'}"
+            print(msg)
+            messagebox.showinfo("Test SQL Update", msg)
+        except Exception as e:
+            print(f"Test SQL Update Error: {e}")
+            messagebox.showerror("Test Error", f"Error during test update: {e}")
+
     def refresh_user_details(self):
         """Reload the user-details Treeview with fresh data."""
         rows = self.fetch_user_details()
@@ -226,7 +257,11 @@ class Secure360GUI:
             return
         # Update per-user recording_status gear
         try:
-            write_user_recording_status(username, status=None, event_type=None, gear=gear_val)
+            sql_ok, fb_ok = update_user_recording_status(username, status=None, event_type=None, gear=gear_val)
+            if not sql_ok:
+                messagebox.showwarning("SQL Update", f"Failed to update local DB for {username}")
+            if not fb_ok:
+                messagebox.showwarning("Firebase Update", f"Failed to update Firebase for {username}")
         except Exception as e:
             print(f"Failed to update gear for {username}: {e}")
         print(f"⚙️ Gear Update: {selection} for user {username}")
@@ -264,10 +299,18 @@ class Secure360GUI:
             current_status = db_ref.child('users').child(username).child('recording_status').child('status').get()
             if current_status == 0 or current_status is None:
                 event_val = RecordingState[self.selected_event.get()].value
-                write_user_recording_status(username, status=1, event_type=event_val, gear=self.gear_options[self.selected_gear.get()])
+                sql_ok, fb_ok = update_user_recording_status(username, status=1, event_type=event_val, gear=self.gear_options[self.selected_gear.get()])
+                if not sql_ok:
+                    messagebox.showwarning("SQL Update", f"Failed to update local DB for {username}")
+                if not fb_ok:
+                    messagebox.showwarning("Firebase Update", f"Failed to update Firebase for {username}")
                 self.btn_record.config(text="STOP RECORDING", bg="orange")
             else:
-                write_user_recording_status(username, status=0, event_type=0, gear=self.gear_options[self.selected_gear.get()])
+                sql_ok, fb_ok = update_user_recording_status(username, status=0, event_type=0, gear=self.gear_options[self.selected_gear.get()])
+                if not sql_ok:
+                    messagebox.showwarning("SQL Update", f"Failed to update local DB for {username}")
+                if not fb_ok:
+                    messagebox.showwarning("Firebase Update", f"Failed to update Firebase for {username}")
                 self.btn_record.config(text="START RECORDING", bg="blue")
         except Exception as e:
             print(f"Toggle Error: {e}")
