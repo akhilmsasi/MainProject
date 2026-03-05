@@ -4,6 +4,9 @@ import threading
 from enum import IntEnum
 import firebase_admin
 from firebase_admin import credentials, db, storage
+import json
+import time
+from google.auth import exceptions as google_auth_exceptions
 
 # 1. Define the Enum
 class RecordingState(IntEnum):
@@ -14,24 +17,57 @@ class RecordingState(IntEnum):
     HARD_BRAKING = 4
     ALARM = 5
 
+FIREBASE_AVAILABLE = False
+db_ref = None
+bucket = None
+BUCKET_NAME = None
+
+def _print_service_account_summary(path="serviceAccountKey.json"):
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            j = json.load(f)
+            proj = j.get('project_id')
+            client = j.get('client_email')
+            print(f"Service account summary: project_id={proj}, client_email={client}")
+    except Exception as e:
+        print(f"Could not read serviceAccountKey.json for summary: {e}")
+
 try:
     cred = credentials.Certificate("serviceAccountKey.json")
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://fir-7211b-default-rtdb.firebaseio.com/',
         'storageBucket': 'fir-7211b.appspot.com'
     })
+    # Success
+    FIREBASE_AVAILABLE = True
+    try:
+        db_ref = db.reference('/')
+    except Exception as e:
+        print(f"Firebase DB reference error: {e}")
+        db_ref = None
+    # Configure bucket name explicitly so we can detect missing/incorrect bucket errors early.
+    BUCKET_NAME = 'fir-7211b.firebasestorage.app'
+    try:
+        bucket = storage.bucket(BUCKET_NAME)
+    except Exception as e:
+        bucket = None
+        print(f"Warning: could not access storage bucket '{BUCKET_NAME}': {e}")
 except Exception as e:
+    # Provide richer diagnostics for common auth problems
     print(f"Firebase Init Error: {e}")
-
-# --- THE MISSING VARIABLES ---
-db_ref = db.reference('/')
-# Configure bucket name explicitly so we can detect missing/incorrect bucket errors early.
-BUCKET_NAME = 'fir-7211b.firebasestorage.app'
-try:
-    bucket = storage.bucket(BUCKET_NAME)
-except Exception as e:
-    bucket = None
-    print(f"Warning: could not access storage bucket '{BUCKET_NAME}': {e}")
+    _print_service_account_summary()
+    # Common cause: invalid_grant / Invalid JWT Signature
+    se = str(e)
+    if 'invalid_grant' in se or 'Invalid JWT Signature' in se or 'invalid_grant' in repr(e):
+        print("Hint: received invalid_grant/Invalid JWT Signature.")
+        print(" - Common causes: system clock out of sync, revoked/rotated service account key, or wrong key file.")
+        print(" - Quick fixes to try:")
+        print("    * Ensure your system clock is correct (run 'w32tm /resync' as admin on Windows).")
+        print("    * Re-download the service account JSON from Firebase Console -> Project Settings -> Service accounts -> Generate new private key.")
+        print("    * Verify the service account's project_id matches the project's databaseURL and storage bucket.")
+    else:
+        print("See exception above for details. If this persists, try re-downloading the service account JSON.")
+    FIREBASE_AVAILABLE = False
 
 # 2. Define the Locations
 TVM_LOCATIONS = [
