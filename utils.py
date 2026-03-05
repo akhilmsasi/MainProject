@@ -1,5 +1,6 @@
 import mysql.connector
 import os
+import threading
 from enum import IntEnum
 import firebase_admin
 from firebase_admin import credentials, db, storage
@@ -413,6 +414,58 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
         cursor.close()
         conn.close()
         print(f"✅ insert_incident_record: inserted {record_id}")
+        # Build payload to push to Firebase asynchronously
+        try:
+            payload = {
+                'id': str(record_id),
+                'incident_date': str(incident_date),
+                'incident_time': incident_time,
+                'title': title,
+                'locationLat': float(locationLat) if locationLat is not None else 0.0,
+                'locationLong': float(locationLong) if locationLong is not None else 0.0,
+                'fileUploadedStatus': int(fileUploadedStatus),
+                'placeCityName': placeCityName,
+                'roadName': roadName,
+                'vehicleSpeed': float(vehicleSpeed) if vehicleSpeed is not None else 0.0,
+                'incidentType': int(incidentType) if incidentType is not None else 0,
+                'gear': int(gear) if gear is not None else 0,
+                'filepath': "Null",
+                'created_at': str(incident_dt)
+            }
+
+            def _push_worker(uname, rid, pl):
+                try:
+                    u = uname
+                    # If username not provided, pick the first username from Userdetails
+                    if not u:
+                        try:
+                            c = get_db_connection()
+                            cur = c.cursor()
+                            cur.execute("SELECT username FROM Userdetails LIMIT 1")
+                            r = cur.fetchone()
+                            cur.close()
+                            c.close()
+                            if r and r[0]:
+                                u = r[0]
+                        except Exception as e:
+                            print(f"Warning: could not fetch default username for Firebase push: {e}")
+
+                    if not u:
+                        print(f"No username available, skipping Firebase push for event {rid}")
+                        return
+
+                    # Path: /users/{username}/Events/{record_id}
+                    db_ref.child('users').child(str(u)).child('Events').child(str(rid)).set(pl)
+                    print(f"✅ Pushed event {rid} to Firebase under users/{u}/Events/{rid}")
+                except Exception as e:
+                    print(f"Failed to push event {rid} to Firebase: {e}")
+
+            # Start background thread to push to Firebase
+            t = threading.Thread(target=_push_worker, args=(None, record_id, payload), daemon=True)
+            t.start()
+        except Exception as e:
+            print(f"Warning: could not start Firebase push thread: {e}")
+
         return True
     except Exception as e:
         print(f"❌ insert_incident_record error: {e}")
