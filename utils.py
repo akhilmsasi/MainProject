@@ -359,3 +359,69 @@ def sync_recording_status_sql_to_firebase(propagate_to_users=False):
     except Exception as e:
         print(f"Error syncing recording_status from SQL to Firebase: {e}")
         return False
+
+
+def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locationLong=0.0,
+                           fileUploadedStatus=0, placeCityName=None, roadName=None,
+                           vehicleSpeed=0.0, incidentType=0, gear=0, filepath=None):
+    """Insert a row into `incidentrecords`.
+
+    Parameters:
+    - record_id: unique id for the incident (string)
+    - incident_dt: a datetime.datetime object representing the incident timestamp
+    - title: short title/string for the incident
+    - locationLat/locationLong: floats
+    - fileUploadedStatus: int flag
+    - placeCityName/roadName: optional strings
+    - vehicleSpeed: float
+    - incidentType: int
+    - gear: int
+    - filepath: path to the saved video file
+
+    Returns True on success, False on failure.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        sql = ("INSERT INTO incidentrecords (id, incident_date, incident_time, title, locationLat, locationLong, "
+               "fileUploadedStatus, placeCityName, roadName, vehicleSpeed, incidentType, gear, filepath, created_at) "
+               "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+
+        incident_date = incident_dt.date() if hasattr(incident_dt, 'date') else incident_dt
+        incident_time = incident_dt.strftime("%H:%M:%S") if hasattr(incident_dt, 'strftime') else None
+
+        values = (
+            str(record_id),
+            incident_date,
+            incident_time,
+            title,
+            float(locationLat) if locationLat is not None else 0.0,
+            float(locationLong) if locationLong is not None else 0.0,
+            int(fileUploadedStatus),
+            placeCityName,
+            roadName,
+            float(vehicleSpeed) if vehicleSpeed is not None else 0.0,
+            int(incidentType) if incidentType is not None else 0,
+            int(gear) if gear is not None else 0,
+            filepath,
+            incident_dt
+        )
+
+        cursor.execute(sql, values)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"✅ insert_incident_record: inserted {record_id}")
+        return True
+    except Exception as e:
+        print(f"❌ insert_incident_record error: {e}")
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return False

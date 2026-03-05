@@ -4,7 +4,7 @@ import datetime
 import time
 import os
 import random
-from utils import get_db_connection, RecordingState, OUTPUT_PATH, TVM_LOCATIONS
+from utils import get_db_connection, RecordingState, OUTPUT_PATH, TVM_LOCATIONS, insert_incident_record
 
 def save_video(frames, event_type_val):
     if not frames: 
@@ -36,20 +36,25 @@ def save_video(frames, event_type_val):
         lat, lng, place, road = loc_data[0], loc_data[1], loc_data[2], loc_data[3]
         speed = random.randint(40, 90)
 
-        sql = """INSERT INTO incidentrecords 
-                 (id, incident_date, incident_time, title, locationLat, locationLong, 
-                  fileUploadedStatus, placeCityName, roadName, vehicleSpeed, 
-                  incidentType, gear, filepath, created_at) 
-                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-        
-        values = (video_id, now.date(), now.strftime("%H:%M:%S"), event_name, 
-                  lat, lng, 0, place, road, speed, event_type_val, 
-                  current_gear, filename, now)
-        
-        cursor.execute(sql, values)
-        conn.commit()
-        print(f"✅ SUCCESS: Incident {video_id} logged at {place}")
-        conn.close()
+        success = insert_incident_record(
+            record_id=video_id,
+            incident_dt=now,
+            title=event_name,
+            locationLat=lat,
+            locationLong=lng,
+            fileUploadedStatus=0,
+            placeCityName=place,
+            roadName=road,
+            vehicleSpeed=speed,
+            incidentType=event_type_val,
+            gear=current_gear,
+            filepath=filename
+        )
+
+        if success:
+            print(f"✅ SUCCESS: Incident {video_id} logged at {place}")
+        else:
+            print(f"❌ FAILED: Incident {video_id} could not be logged to DB")
     except Exception as e:
         print(f"❌ CRITICAL ERROR in save_video: {e}")
 
