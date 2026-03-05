@@ -89,6 +89,7 @@ def initialize_database():
                 locationLat DOUBLE DEFAULT 0.0,
                 locationLong DOUBLE DEFAULT 0.0,
                 fileUploadedStatus INT DEFAULT 0,
+                upload_progress INT DEFAULT 0,
                 placeCityName VARCHAR(100),
                 roadName VARCHAR(100),
                 vehicleSpeed FLOAT DEFAULT 0.0,
@@ -474,7 +475,13 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                 # Ensure file exists
                                 if not os.path.isfile(path):
                                     print(f"Upload worker: file not found {path}")
-                                    e_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
+                                    try:
+                                        e_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
+                                    except Exception:
+                                        pass
+                                    # update SQL to indicate failure
+                                    # mark SQL row as failed (file missing)
+                                    update_incident_upload_status(rid_inner, progress=0, status=-1)
                                     return
 
                                 total_size = os.path.getsize(path)
@@ -489,6 +496,9 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                         e_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
                                     except Exception:
                                         pass
+                                    # update SQL to indicate failure due to missing bucket
+                                    # mark SQL row as failed (no bucket)
+                                    update_incident_upload_status(rid_inner, progress=0, status=-1)
                                     return
 
                                 dest_path = f"Videos/{uname_inner}/{rid_inner}" + os.path.splitext(path)[1]
@@ -519,6 +529,12 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                                         e_ref.update({'upload_progress': progress, 'fileUploadedStatus': 1})
                                                     except Exception as ue:
                                                         print(f"RTDB progress update failed for {rid_inner}: {ue}")
+                                                    # update SQL with progress
+                                                    # update SQL with progress
+                                                    try:
+                                                        update_incident_upload_status(rid_inner, progress=progress, status=1)
+                                                    except Exception as sqle:
+                                                        print(f"SQL progress update failed for {rid_inner}: {sqle}")
 
                                     # Make blob publicly accessible (optional) and get URL
                                     try:
@@ -545,6 +561,11 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                     ok_update = _rt_update_with_retry(e_ref, final_payload, retries=3)
                                     if not ok_update:
                                         print(f"Warning: final RTDB update failed for {rid_inner} after retries")
+                                    # update SQL final status
+                                    try:
+                                        update_incident_upload_status(rid_inner, progress=100, status=2, filepath=storage_url)
+                                    except Exception as sqle:
+                                        print(f"SQL final update failed for {rid_inner}: {sqle}")
 
                                     print(f"✅ Upload complete for {rid_inner} -> {storage_url}")
                                 except Exception as ex_stream:
@@ -561,6 +582,12 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                         ok_update = _rt_update_with_retry(e_ref, final_payload, retries=3)
                                         if not ok_update:
                                             print(f"Warning: final RTDB update failed for {rid_inner} after fallback upload")
+                                        # update SQL final status after fallback
+                                        try:
+                                            update_incident_upload_status(rid_inner, progress=100, status=2, filepath=storage_url)
+                                        except Exception as sqle:
+                                            print(f"SQL final update failed for {rid_inner} after fallback: {sqle}")
+
                                         print(f"✅ Upload (fallback) complete for {rid_inner} -> {storage_url}")
                                     except Exception as ex_upload:
                                         print(f"Upload failed for {rid_inner}: {ex_upload}")
@@ -568,6 +595,10 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                             e_ref.update({'fileUploadedStatus': -1})
                                         except Exception as eu:
                                             print(f"Failed to set failure status in RTDB for {rid_inner}: {eu}")
+                                        try:
+                                            update_incident_upload_status(rid_inner, status=-1)
+                                        except Exception as sqle:
+                                            print(f"SQL failure status update failed for {rid_inner}: {sqle}")
                             except Exception as e:
                                 print(f"Uploader exception for {rid_inner}: {e}")
 
@@ -594,6 +625,72 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
         except Exception:
             pass
         return False
+
+
+def update_incident_upload_status(record_id, progress=None, status=None, filepath=None):
+    """Update upload status/filepath for an incident row in SQL.
+
+    Notes:
+    - Some installations don't have an `upload_progress` column. To be compatible
+      we map progress values into the existing `fileUploadedStatus` column so
+      the database is updated regardless of whether `upload_progress` exists.
+    - If both `status` and `progress` are provided, `status` takes precedence
+      because it represents an explicit fileUploadedStatus value.
+
+    Parameters:
+    - progress: integer 0..100 (will be written into `fileUploadedStatus` when
+      the DB lacks a dedicated progress column)
+    - status: int to set fileUploadedStatus (e.g., 0 initial, 1 uploading, 2 done, -1 failed)
+    - filepath: storage URL string to set filepath
+
+    Returns number of affected rows (0 if none).
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        parts = []
+        vals = []
+        # Map `progress` into the `fileUploadedStatus` column so older schemas
+        # without `upload_progress` receive progress updates. If `progress` is
+        # provided we prefer it (it contains the percent). Otherwise fall back
+        # to the explicit `status` parameter.
+        if progress is not None:
+            # store the numeric progress into fileUploadedStatus for compatibility
+            parts.append("fileUploadedStatus=%s")
+            vals.append(int(progress))
+        elif status is not None:
+            parts.append("fileUploadedStatus=%s")
+            vals.append(int(status))
+        if filepath is not None:
+            parts.append("filepath=%s")
+            vals.append(filepath)
+
+        if not parts:
+            cur.close()
+            conn.close()
+            return 0
+
+        sql = f"UPDATE incidentrecords SET {', '.join(parts)} WHERE id=%s"
+        vals.append(str(record_id))
+        cur.execute(sql, tuple(vals))
+        affected = cur.rowcount
+        conn.commit()
+        cur.close()
+        conn.close()
+        if affected == 0:
+            print(f"update_incident_upload_status: affected 0 rows for id={record_id}")
+        return affected
+    except Exception as e:
+        print(f"update_incident_upload_status error for {record_id}: {e}")
+        try:
+            cur.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return 0
 
 
 def check_storage_access():
@@ -665,3 +762,64 @@ def check_storage_access():
             print(f"Diagnostic attempt failed for candidate {c}: {outer_e}")
 
     print("=== End diagnostic ===")
+
+
+def sync_firebase_events_once():
+    """One-time sync: read /users/*/Events/* from RTDB and persist upload_progress/fileUploadedStatus/filepath to SQL.
+
+    Use this when you want to reconcile RTDB -> MySQL (for example if updates may come from other processes).
+    Returns the number of events processed.
+    """
+    processed = 0
+    try:
+        users = db_ref.child('users').get() or {}
+        # users is a dict: { username: { Events: { event_id: {upload_progress:.., fileUploadedStatus:.., filepath:..}, ...}, ...}, ...}
+        for uname, udata in (users.items() if isinstance(users, dict) else []):
+            try:
+                events = udata.get('Events') if isinstance(udata, dict) else None
+                if not events:
+                    continue
+                for event_id, ev in (events.items() if isinstance(events, dict) else []):
+                    try:
+                        if not ev or not isinstance(ev, dict):
+                            continue
+                        progress = ev.get('upload_progress')
+                        status = ev.get('fileUploadedStatus')
+                        filepath = ev.get('filepath')
+                        # Only update when any of the fields are present
+                        if progress is None and status is None and filepath is None:
+                            continue
+                        update_incident_upload_status(event_id, progress=progress, status=status, filepath=filepath)
+                        processed += 1
+                    except Exception as e:
+                        print(f"sync_firebase_events_once: failed to update event {event_id}: {e}")
+            except Exception as e:
+                print(f"sync_firebase_events_once: failed for user {uname}: {e}")
+        print(f"sync_firebase_events_once: processed {processed} events")
+    except Exception as e:
+        print(f"sync_firebase_events_once: top-level error: {e}")
+    return processed
+
+
+def start_background_firebase_to_sql_sync(poll_interval=30):
+    """Start a daemon thread that periodically syncs RTDB events into MySQL.
+
+    poll_interval: seconds between scans.
+    Returns the Thread object.
+    """
+    def _loop():
+        print(f"Firebase->SQL sync thread started, polling every {poll_interval}s")
+        while True:
+            try:
+                sync_firebase_events_once()
+            except Exception as e:
+                print(f"Background sync error: {e}")
+            try:
+                import time
+                time.sleep(poll_interval)
+            except Exception:
+                break
+
+    t = threading.Thread(target=_loop, daemon=True)
+    t.start()
+    return t
