@@ -25,7 +25,13 @@ except Exception as e:
 
 # --- THE MISSING VARIABLES ---
 db_ref = db.reference('/')
-bucket = storage.bucket()
+# Configure bucket name explicitly so we can detect missing/incorrect bucket errors early.
+BUCKET_NAME = 'fir-7211b.firebasestorage.app'
+try:
+    bucket = storage.bucket(BUCKET_NAME)
+except Exception as e:
+    bucket = None
+    print(f"Warning: could not access storage bucket '{BUCKET_NAME}': {e}")
 
 # 2. Define the Locations
 TVM_LOCATIONS = [
@@ -364,7 +370,7 @@ def sync_recording_status_sql_to_firebase(propagate_to_users=False):
 
 def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locationLong=0.0,
                            fileUploadedStatus=0, placeCityName=None, roadName=None,
-                           vehicleSpeed=0.0, incidentType=0, gear=0, filepath=None):
+                           vehicleSpeed=0.0, incidentType=0, gear=0, filepath=None, username=None):
     """Insert a row into `incidentrecords`.
 
     Parameters:
@@ -430,10 +436,12 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                 'incidentType': int(incidentType) if incidentType is not None else 0,
                 'gear': int(gear) if gear is not None else 0,
                 'filepath': "Null",
-                'created_at': str(incident_dt)
+                'created_at': str(incident_dt),
+                'upload_progress': 0,
+                'fileUploadedStatus': int(fileUploadedStatus)
             }
 
-            def _push_worker(uname, rid, pl):
+            def _push_worker(uname, rid, pl, local_filepath):
                 try:
                     u = uname
                     # If username not provided, pick the first username from Userdetails
@@ -455,13 +463,121 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                         return
 
                     # Path: /users/{username}/Events/{record_id}
-                    db_ref.child('users').child(str(u)).child('Events').child(str(rid)).set(pl)
+                    event_ref = db_ref.child('users').child(str(u)).child('Events').child(str(rid))
+                    event_ref.set(pl)
                     print(f"✅ Pushed event {rid} to Firebase under users/{u}/Events/{rid}")
+
+                    # If a local filepath was provided, start upload in a separate thread/function
+                    if local_filepath:
+                        def _upload_worker(path, e_ref, rid_inner, uname_inner):
+                            try:
+                                # Ensure file exists
+                                if not os.path.isfile(path):
+                                    print(f"Upload worker: file not found {path}")
+                                    e_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
+                                    return
+
+                                total_size = os.path.getsize(path)
+                                bytes_sent = 0
+                                # Use a smaller chunk size to allow finer-grained progress updates
+                                chunk_size = 64 * 1024  # 64KB
+
+                                # Destination in storage: Videos/{username}/{record_id}.<ext>
+                                if not bucket:
+                                    print(f"Upload worker: storage bucket not available, skipping upload for {rid_inner}")
+                                    try:
+                                        e_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
+                                    except Exception:
+                                        pass
+                                    return
+
+                                dest_path = f"Videos/{uname_inner}/{rid_inner}" + os.path.splitext(path)[1]
+                                blob = bucket.blob(dest_path)
+
+                                # Try streaming write to storage so we can update progress per chunk.
+                                try:
+                                    with open(path, 'rb') as f_in:
+                                        # Open a writeable file-like object to blob (resumable)
+                                        with blob.open("wb") as f_out:
+                                            last_progress = -1
+                                            while True:
+                                                chunk = f_in.read(chunk_size)
+                                                if not chunk:
+                                                    break
+                                                f_out.write(chunk)
+                                                bytes_sent += len(chunk)
+                                                # Compute percentage and ensure we only update when percentage changes
+                                                progress = int((bytes_sent / total_size) * 100)
+                                                if progress != last_progress:
+                                                    last_progress = progress
+                                                    # Print progress locally and update RTDB
+                                                    try:
+                                                        print(f"Upload progress for {rid_inner}: {progress}%")
+                                                    except Exception:
+                                                        pass
+                                                    try:
+                                                        e_ref.update({'upload_progress': progress, 'fileUploadedStatus': 1})
+                                                    except Exception as ue:
+                                                        print(f"RTDB progress update failed for {rid_inner}: {ue}")
+
+                                    # Make blob publicly accessible (optional) and get URL
+                                    try:
+                                        blob.make_public()
+                                        storage_url = blob.public_url
+                                    except Exception:
+                                        storage_url = f"gs://{bucket.name}/{dest_path}"
+
+                                    # Final update: set filepath to storage url, progress 100 and status 2
+                                    def _rt_update_with_retry(ref_obj, payload, retries=3):
+                                        import time
+                                        attempt = 0
+                                        while attempt < retries:
+                                            try:
+                                                ref_obj.update(payload)
+                                                return True
+                                            except Exception as eup:
+                                                attempt += 1
+                                                print(f"RTDB final update attempt {attempt} failed for {rid_inner}: {eup}")
+                                                time.sleep(1)
+                                        return False
+
+                                    final_payload = {'upload_progress': 100, 'fileUploadedStatus': 2, 'filepath': storage_url}
+                                    ok_update = _rt_update_with_retry(e_ref, final_payload, retries=3)
+                                    if not ok_update:
+                                        print(f"Warning: final RTDB update failed for {rid_inner} after retries")
+
+                                    print(f"✅ Upload complete for {rid_inner} -> {storage_url}")
+                                except Exception as ex_stream:
+                                    # Fall back to a single upload and mark as complete on success
+                                    try:
+                                        blob.upload_from_filename(path)
+                                        try:
+                                            blob.make_public()
+                                            storage_url = blob.public_url
+                                        except Exception:
+                                            storage_url = f"gs://{bucket.name}/{dest_path}"
+                                        # Final update with retry
+                                        final_payload = {'upload_progress': 100, 'fileUploadedStatus': 2, 'filepath': storage_url}
+                                        ok_update = _rt_update_with_retry(e_ref, final_payload, retries=3)
+                                        if not ok_update:
+                                            print(f"Warning: final RTDB update failed for {rid_inner} after fallback upload")
+                                        print(f"✅ Upload (fallback) complete for {rid_inner} -> {storage_url}")
+                                    except Exception as ex_upload:
+                                        print(f"Upload failed for {rid_inner}: {ex_upload}")
+                                        try:
+                                            e_ref.update({'fileUploadedStatus': -1})
+                                        except Exception as eu:
+                                            print(f"Failed to set failure status in RTDB for {rid_inner}: {eu}")
+                            except Exception as e:
+                                print(f"Uploader exception for {rid_inner}: {e}")
+
+                        upl_thread = threading.Thread(target=_upload_worker, args=(local_filepath, event_ref, rid, u), daemon=True)
+                        upl_thread.start()
                 except Exception as e:
                     print(f"Failed to push event {rid} to Firebase: {e}")
 
             # Start background thread to push to Firebase
-            t = threading.Thread(target=_push_worker, args=(None, record_id, payload), daemon=True)
+            t = threading.Thread(target=_push_worker, args=(username, record_id, payload, filepath), daemon=True)
             t.start()
         except Exception as e:
             print(f"Warning: could not start Firebase push thread: {e}")
@@ -478,3 +594,74 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
         except Exception:
             pass
         return False
+
+
+def check_storage_access():
+    """Diagnostic helper: attempts to resolve and access possible storage buckets.
+
+    Prints which bucket names were tried and whether they appear accessible.
+    Run this from your environment to collect evidence about why uploads fail.
+    """
+    print("=== Storage access diagnostic ===")
+    candidates = []
+    # candidate from configured constant
+    try:
+        candidates.append(BUCKET_NAME)
+    except NameError:
+        pass
+
+    # try to read project_id from serviceAccountKey.json
+    proj = None
+    try:
+        import json
+        with open('serviceAccountKey.json', 'r') as f:
+            data = json.load(f)
+            proj = data.get('project_id')
+            if proj:
+                candidates.append(f"{proj}.appspot.com")
+                candidates.append(f"{proj}.firebasestorage.app")
+                candidates.append(f"{proj}.firebaseapp.com")
+    except Exception as e:
+        print(f"Could not read serviceAccountKey.json: {e}")
+
+    # include the default (no-name) attempt
+    tried = set()
+    for c in [None] + candidates:
+        try:
+            if c in tried:
+                continue
+            tried.add(c)
+            if c is None:
+                print("Trying default storage.bucket() (no name)...")
+                b = None
+                try:
+                    b = storage.bucket()
+                except Exception as ie:
+                    print(f"  -> storage.bucket() error: {ie}")
+                    continue
+            else:
+                print(f"Trying storage.bucket('{c}')...")
+                try:
+                    b = storage.bucket(c)
+                except Exception as ie:
+                    print(f"  -> storage.bucket('{c}') error: {ie}")
+                    continue
+
+            # Quick check: try to get bucket name and optionally check existence
+            try:
+                name = getattr(b, 'name', None)
+                print(f"  -> bucket object obtained, name={name}")
+            except Exception as e:
+                print(f"  -> obtained bucket object but reading name failed: {e}")
+
+            # Try a simple operation that requires access: list blobs (limited)
+            try:
+                blobs = list(b.list_blobs(max_results=1))
+                print(f"  -> list_blobs OK (found {len(blobs)} blobs)")
+            except Exception as e:
+                print(f"  -> list_blobs failed (likely permission or not found): {e}")
+
+        except Exception as outer_e:
+            print(f"Diagnostic attempt failed for candidate {c}: {outer_e}")
+
+    print("=== End diagnostic ===")
