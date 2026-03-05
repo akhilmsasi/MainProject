@@ -1,129 +1,229 @@
 import tkinter as tk
 import subprocess
-from utils import get_db_connection, RecordingState, initialize_database
+import datetime
+from tkinter import messagebox, ttk
+from utils import db_ref, RecordingState, initialize_database, get_db_connection
+from firebase_manager import FirebaseManager
+from firebase_admin import db
 
 class Secure360GUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Secure360 Master Control")
-        self.root.geometry("400x450")
+        self.root.title("Secure360 Cloud & SQL Control")
+        self.root.geometry("400x550")
         
+        self.fm = FirebaseManager()
         self.processes = []
         self.is_on = False
 
-        # --- System Power Button ---
+        # --- 1. Firebase Connection Status Indicator ---
+        self.status_frame = tk.Frame(root, bg="#f0f0f0")
+        self.status_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        self.lbl_fb_status = tk.Label(self.status_frame, text="FIREBASE: DISCONNECTED", 
+                                      fg="red", font=('Arial', 8, 'bold'))
+        self.lbl_fb_status.pack(side=tk.LEFT)
+        
+        # --- 2. System Power Button ---
         self.btn_power = tk.Button(root, text="SYSTEM POWER: OFF", bg="red", fg="white", 
                                    command=self.toggle_power, width=30, height=3, font=('Arial', 10, 'bold'))
-        self.btn_power.pack(pady=20)
+        self.btn_power.pack(pady=10)
 
-        # --- Gear Selection Dropdown ---
+        # --- 3. Gear Selection ---
         tk.Label(root, text="Select Gear Status:", font=('Arial', 9, 'bold')).pack()
         self.gear_options = {"Park": 0, "Drive": 1}
         self.selected_gear = tk.StringVar(root)
         self.selected_gear.set("Park")
-
-        self.gear_menu = tk.OptionMenu(root, self.selected_gear, *self.gear_options.keys(), command=self.update_gear_in_db)
+        self.gear_menu = tk.OptionMenu(root, self.selected_gear, *self.gear_options.keys(), command=self.update_gear)
         self.gear_menu.config(width=25, state=tk.DISABLED)
         self.gear_menu.pack(pady=5)
 
-        # --- Event Selection Dropdown ---
+        # --- 4. Event Selection ---
         tk.Label(root, text="Select Event Type:", font=('Arial', 9, 'bold')).pack(pady=(15, 0))
         self.event_options = [state.name for state in RecordingState if state.value != 0]
         self.selected_event = tk.StringVar(root)
         self.selected_event.set(self.event_options[0])
-
         self.event_menu = tk.OptionMenu(root, self.selected_event, *self.event_options)
         self.event_menu.config(width=25, state=tk.DISABLED)
         self.event_menu.pack(pady=5)
 
-        # --- Recording Toggle Button ---
+        # --- 5. Recording Toggle ---
         self.btn_record = tk.Button(root, text="START RECORDING", bg="gray", fg="white", 
                                     command=self.toggle_manual_record, width=30, height=2, state=tk.DISABLED)
-        self.btn_record.pack(pady=25)
+        self.btn_record.pack(pady=20)
 
-        self.check_db_status()
+        # --- 6. Test Firebase Connection Button ---
+        self.btn_test = tk.Button(root, text="SEND SAMPLE DATA TO CLOUD", bg="#e1e1e1", 
+                                  command=self.test_firebase_connection, width=30)
+        self.btn_test.pack(pady=10)
 
-    def update_gear_in_db(self, selection):
-        """Updates the gear column in the database immediately when changed."""
+        # --- 7. User Details Section (from XAMPP MySQL 'videodatabase') ---
+        tk.Label(root, text="User Details (from DB):", font=('Arial', 9, 'bold')).pack(pady=(15, 0))
+        self.user_frame = tk.Frame(root)
+        self.user_frame.pack(fill=tk.BOTH, expand=False, padx=10, pady=5)
+
+        # Columns follow the schema in user_registration.php (secure360.Userdetails)
+        self.user_tree = ttk.Treeview(
+            self.user_frame,
+            columns=("username", "name", "address", "email", "contact", "alt_contact", "vehicleNumber", "vehicleModel", "vehicleColor", "created"),
+            show="headings",
+            height=6
+        )
+        self.user_tree.heading("username", text="Username")
+        self.user_tree.heading("name", text="Name")
+        self.user_tree.heading("address", text="Address")
+        self.user_tree.heading("email", text="Email")
+        self.user_tree.heading("contact", text="Contact")
+        self.user_tree.heading("alt_contact", text="Alt Contact")
+        self.user_tree.heading("vehicleNumber", text="Vehicle No.")
+        self.user_tree.heading("vehicleModel", text="Model")
+        self.user_tree.heading("vehicleColor", text="Color")
+        self.user_tree.heading("created", text="Created")
+
+        self.user_tree.column("username", width=110, anchor='w')
+        self.user_tree.column("name", width=130, anchor='w')
+        self.user_tree.column("address", width=200, anchor='w')
+        self.user_tree.column("email", width=160, anchor='w')
+        self.user_tree.column("contact", width=100, anchor='w')
+        self.user_tree.column("alt_contact", width=100, anchor='w')
+        self.user_tree.column("vehicleNumber", width=100, anchor='w')
+        self.user_tree.column("vehicleModel", width=100, anchor='w')
+        self.user_tree.column("vehicleColor", width=80, anchor='w')
+        self.user_tree.column("created", width=140, anchor='w')
+
+        self.user_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll = ttk.Scrollbar(self.user_frame, orient="vertical", command=self.user_tree.yview)
+        self.user_tree.configure(yscroll=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.btn_refresh_users = tk.Button(root, text="Refresh Users", command=self.refresh_user_details, width=30)
+        self.btn_refresh_users.pack(pady=5)
+
+        # Run initial check
+        self.check_cloud_connection()
+        # Load user details once at startup
+        self.refresh_user_details()
+
+    def check_cloud_connection(self):
+        """Pings Firebase to check connectivity."""
+        try:
+            # Admin SDK cannot read the client-only '.info/connected' path.
+            # Do a lightweight read of a small known key to check connectivity instead.
+            _ = db_ref.child('connection_test').get()
+            # If no exception was raised, we consider the DB reachable.
+            self.lbl_fb_status.config(text="FIREBASE: ONLINE", fg="green")
+        except Exception as e:
+            # Print the exception to console for easier debugging
+            print("Firebase connectivity check error:", e)
+            self.lbl_fb_status.config(text="FIREBASE: OFFLINE", fg="red")
+        
+        # Re-check every 5 seconds
+        self.root.after(5000, self.check_cloud_connection)
+
+    def test_firebase_connection(self):
+        """Sends a single piece of sample data to verify Firebase works."""
+        sample_data = {
+            "test_message": "Hello from Secure360 GUI",
+            "last_test_time": str(datetime.datetime.now())
+        }
+        try:
+            db_ref.child('connection_test').set(sample_data)
+            messagebox.showinfo("Success", "Sample data sent to Firebase Successfully!")
+            self.lbl_fb_status.config(text="FIREBASE: ONLINE", fg="green")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to connect: {e}")
+
+    def fetch_user_details(self):
+        """Fetch rows from the XAMPP MySQL `videodatabase.Userdetails` table."""
+        try:
+            # Use central DB config from utils.get_db_connection() which points to `secure360` by default
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            # Query fields according to user_registration.php table schema
+            cursor.execute("SELECT username, name, address, email, contactNumber, altContactNumber, vehicleNumber, vehicleModel, vehicleColor, created_at FROM Userdetails")
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rows
+        except Exception as e:
+            print("Error fetching user details:", e)
+            # Show a user-visible error only once per failure
+            try:
+                messagebox.showerror("DB Error", f"Unable to fetch Userdetails: {e}")
+            except:
+                pass
+            return []
+
+    def refresh_user_details(self):
+        """Reload the user-details Treeview with fresh data."""
+        rows = self.fetch_user_details()
+        # Clear existing
+        for item in self.user_tree.get_children():
+            self.user_tree.delete(item)
+        # Insert new rows
+        for r in rows:
+            self.user_tree.insert(
+                "",
+                "end",
+                values=(
+                    r.get('username'),
+                    r.get('name'),
+                    r.get('address'),
+                    r.get('email'),
+                    r.get('contactNumber'),
+                    r.get('altContactNumber'),
+                    r.get('vehicleNumber'),
+                    r.get('vehicleModel'),
+                    r.get('vehicleColor'),
+                    str(r.get('created_at'))
+                )
+            )
+
+    def update_gear(self, selection):
         if not self.is_on: return
         gear_val = self.gear_options[selection]
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            # Assuming your table has a 'gear' column
-            cursor.execute("UPDATE recording_status SET gear = %s", (gear_val,))
-            conn.commit()
-            #conn.close()
-            print(f"⚙️ Gear shifted to: {selection} ({gear_val})")
-        except Exception as e:
-            print(f"Gear Update Error: {e}")
+        # Update Firebase via Manager
+        self.fm.update_cloud_status(status=0, event_type=0, gear=gear_val)
+        print(f"⚙️ Gear Update: {selection}")
 
     def toggle_power(self):
         if not self.is_on:
             initialize_database()
-            self.update_db_status(0, 0, 0) # status, event, gear
-            p1 = subprocess.Popen(['python', 'recording_service.py'])
-            p2 = subprocess.Popen(['python', 'data_monitor.py'])
-            self.processes = [p1, p2]
-            
             self.is_on = True
             self.btn_power.config(text="SYSTEM POWER: ON", bg="green")
             self.btn_record.config(state=tk.NORMAL, bg="blue")
             self.event_menu.config(state=tk.NORMAL)
             self.gear_menu.config(state=tk.NORMAL)
+            # Start services
+            p1 = subprocess.Popen(['python', 'recording_service.py'])
+            p2 = subprocess.Popen(['python', 'data_monitor.py'])
+            self.processes = [p1, p2]
         else:
-            for p in self.processes:
-                p.terminate()
-            self.update_db_status(0, 0, 0)
+            for p in self.processes: p.terminate()
             self.is_on = False
             self.btn_power.config(text="SYSTEM POWER: OFF", bg="red")
             self.btn_record.config(state=tk.DISABLED, bg="gray")
             self.event_menu.config(state=tk.DISABLED)
             self.gear_menu.config(state=tk.DISABLED)
 
+    # Note: database initialization is provided by `initialize_database` imported from `utils`.
+
     def toggle_manual_record(self):
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT status FROM recording_status LIMIT 1")
-            result = cursor.fetchone()
-            
-            if result:
-                if result[0] == 0:
-                    event_val = RecordingState[self.selected_event.get()].value
-                    cursor.execute("UPDATE recording_status SET status = 1, EventType = %s", (event_val,))
-                    self.btn_record.config(text="STOP RECORDING", bg="orange")
-                else:
-                    cursor.execute("UPDATE recording_status SET status = 0")
-                conn.commit()
-            conn.close()
+            current_status = db_ref.child('recording_status/status').get()
+            if current_status == 0:
+                event_val = RecordingState[self.selected_event.get()].value
+                self.fm.update_cloud_status(status=1, event_type=event_val, gear=self.gear_options[self.selected_gear.get()])
+                self.btn_record.config(text="STOP RECORDING", bg="orange")
+            else:
+                self.fm.update_cloud_status(status=0, event_type=0, gear=self.gear_options[self.selected_gear.get()])
+                self.btn_record.config(text="START RECORDING", bg="blue")
         except Exception as e:
-            print(f"GUI Toggle Error: {e}")
-
-    def check_db_status(self):
-        if self.is_on:
-            try:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("SELECT status FROM recording_status LIMIT 1")
-                result = cursor.fetchone()
-                conn.close()
-
-                if result and result[0] == 0 and self.btn_record["text"] == "STOP RECORDING":
-                    self.btn_record.config(text="START RECORDING", bg="blue")
-            except: pass
-        self.root.after(1000, self.check_db_status)
-
-    def update_db_status(self, status, event, gear):
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("UPDATE recording_status SET status=%s, EventType=%s, gear=%s", (status, event, gear))
-            conn.commit()
-            conn.close()
-        except: pass
+            print(f"Toggle Error: {e}")
 
 if __name__ == "__main__":
+    import tkinter.messagebox
+    import datetime
     root = tk.Tk()
     app = Secure360GUI(root)
     root.mainloop()

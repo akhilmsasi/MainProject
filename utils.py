@@ -1,6 +1,8 @@
 import mysql.connector
 import os
 from enum import IntEnum
+import firebase_admin
+from firebase_admin import credentials, db, storage
 
 # 1. Define the Enum
 class RecordingState(IntEnum):
@@ -10,6 +12,19 @@ class RecordingState(IntEnum):
     HONK_EVENT = 3
     HARD_BRAKING = 4
     ALARM = 5
+
+try:
+    cred = credentials.Certificate("serviceAccountKey.json")
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://fir-7211b-default-rtdb.firebaseio.com/',
+        'storageBucket': 'fir-7211b.appspot.com'
+    })
+except Exception as e:
+    print(f"Firebase Init Error: {e}")
+
+# --- THE MISSING VARIABLES ---
+db_ref = db.reference('/')
+bucket = storage.bucket()
 
 # 2. Define the Locations
 TVM_LOCATIONS = [
