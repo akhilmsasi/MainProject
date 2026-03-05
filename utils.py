@@ -338,6 +338,34 @@ def update_user_recording_status(username, status=None, event_type=None, gear=No
         except Exception:
             pass
 
+    # Also upsert a per-username row in `user_recording_status` so SQL mirrors
+    # the per-user state that we write to Firebase. This helps environments
+    # that expect per-user status persisted in the database.
+    try:
+        conn_u = get_db_connection()
+        cur_u = conn_u.cursor()
+        # Check existence
+        cur_u.execute("SELECT COUNT(*) FROM user_recording_status WHERE username=%s", (str(username),))
+        exists = cur_u.fetchone()[0] if cur_u.rowcount != -1 else None
+        if exists:
+            cur_u.execute(
+                "UPDATE user_recording_status SET status=%s, EventType=%s, gear=%s WHERE username=%s",
+                (new_status, new_event, new_gear, str(username))
+            )
+        else:
+            cur_u.execute(
+                "INSERT INTO user_recording_status (username, status, EventType, gear) VALUES (%s, %s, %s, %s)",
+                (str(username), new_status, new_event, new_gear)
+            )
+        conn_u.commit()
+        cur_u.close()
+        conn_u.close()
+        print(f"Upserted user_recording_status for {username}: status={new_status}, EventType={new_event}, gear={new_gear}")
+        # Mark sql_ok true if either the single-row update or the per-user upsert succeeded
+        sql_ok = True
+    except Exception as e:
+        print(f"Failed to upsert user_recording_status for {username}: {e}")
+
     # Update Firebase per-user recording_status
     try:
         payload = {'status': new_status, 'EventType': new_event, 'gear': new_gear}
