@@ -262,68 +262,124 @@ The proposed approach bridges the gap between passive recording and active secur
 % \end{figure}\\
 \chapter{Methodology}
 
-For the development of the Smart Vehicle Surveillance System, the Waterfall model was adopted as the primary software development methodology. The Waterfall model follows a linear and sequential approach, in which each phase of development is completed in full before progressing to the next. This approach ensures a structured workflow and clear milestones throughout the project lifecycle. The key phases followed in this project were:
-\begin{enumerate} 
- \item Requirement Analysis
- \item System Design
- \item Implementation
- \item Integration and Testing
- \item Deployment
- \item Maintenance and Refinement
-\end{enumerate}
-\subsection{Requirement Analysis}
-During this phase, all functional and technical requirements were identified and documented. Key requirements include:
-\begin{itemize} 
-\item Capturing 30 seconds of pre-event and 30 seconds of post-event video.
-\item Detecting suspicious activity using a Python-based computer vision pipeline built with OpenCV and MediaPipe.
-\item Constructing a cloud-based API server to store video and metadata.
-\item Developing a mobile application for video viewing and real-time notifications.
-\item Mapping dependencies between modules to guide system design.
-\end{itemize}
-\subsection{System Design}
-In the system design phase, the architecture was finalized and the project was divided into four main modules:
-\begin{itemize}
-\item event app: handles trigger generation and computer-vision-based person detection.
-\item event manager: coordinates events and initiates video recording.
-\item video manager: records video using a circular queue to preserve pre-event footage and encodes clips using GStreamer.
-\item cloud manager: handles cloud upload and metadata management.
-\end{itemize}
-Each module was designed to run as a separate Linux process and communicate through named pipes, allowing efficient parallel development and clear interface definitions.
+The Intelligent Incident Surveillance Response System was developed using the \textbf{Agile methodology}, specifically following the \textbf{Scrum framework}. Agile was chosen because the project involved evolving technical requirements, multi-module integration across different team members, and the need for iterative validation of hardware--software interactions. The Scrum framework provided a structured cadence of short, focused sprints that allowed the team to deliver incremental working features, adapt to significant technical decisions mid-project (such as migrating the backend from C++ to Python), and maintain continuous alignment across all modules.
 
- \subsection{Implementation}
-The implementation phase involved the development of each module according to design specifications:
+\section{Scrum Framework Overview}
+
+Scrum organises work into time-boxed iterations called \textbf{sprints}. At the start of each sprint, the team selects a set of backlog items to deliver. During the sprint, daily progress is tracked and blockers are addressed. At the end of each sprint, a working increment is demonstrated and a retrospective is held to identify improvements for the next sprint.
+
+\subsection{Scrum Team Roles}
 \begin{itemize}
-\item video manager: Used GStreamer to encode and write MP4 files, maintaining a 30-second buffer of pre-event video.
-\item event app: Simulated trigger events and performed person detection using OpenCV for video handling and MediaPipe for human-pose inference.
-\item  cloud manager: Built with Apache, PHP, and MySQL, responsible for accepting uploads and storing metadata.
-\item Android App: Developed to list and play recorded videos, and receive real-time notifications when new footage was uploaded.
-\item Each module was implemented independently but strictly followed the design to ensure seamless integration during later phases.
+    \item \textbf{Product Owner:} Collectively held by the team, responsible for maintaining the product backlog and prioritising features based on project objectives.
+    \item \textbf{Scrum Master:} Responsibility rotated across team members to facilitate sprint planning, stand-ups, and retrospectives.
+    \item \textbf{Development Team:} All four members contributed across backend, frontend, and integration domains.
 \end{itemize}
-\subsection{Integration and Testing}
-After implementation, all modules were integrated and tested end-to-end. Controlled events were simulated to validate:
+
+\subsection{Scrum Artifacts}
 \begin{itemize}
-\item Event detection accuracy
-\item Triggering of video recording
-\item Successful upload to the cloud server
-\item Real-time mobile notifications
+    \item \textbf{Product Backlog:} A prioritised list of all features and requirements including event detection, circular buffer recording, cloud upload, notifications, and mobile playback.
+    \item \textbf{Sprint Backlog:} Tasks committed to in each sprint, broken down from product backlog items.
+    \item \textbf{Increment:} A working, tested portion of the system delivered at the end of every sprint.
 \end{itemize}
-Minor mismatches between modules, such as API format inconsistencies or timing issues, were identified and resolved during this phase.
-\subsection{Maintenance and Refinement}
-The final phase focused on minor improvements and performance enhancements based on testing outcomes:
+
+\section{Team Composition and Responsibilities}
+
+The development team consisted of four members, each holding primary ownership of a domain while collaborating on integration.
+
+\begin{longtable}{|p{2.6cm}|p{2.8cm}|p{3.0cm}|p{5.4cm}|}
+\hline
+\textbf{Team Member} & \textbf{Primary Role} & \textbf{Key Modules} & \textbf{Contributions} \\
+\hline
+Akhil M Sasi & Core Systems \& Infotainment & Android Infotainment App, Video Service & Developed the Jetpack Compose User App and Infotainment app, integrated storage manager and remote streaming pipeline, and added manual recording triggers. \\
+\hline
+Ashna Joy & User Experience \& Mobile & Android User App, Video Gallery & Developed the User App UI and navigation flow; built the Python Surveillance Service including 30-second circular queue logic and local video encoding. \\
+\hline
+Swathi G S & Event \& Analytics & MediaPipe Detection, Event Logic & Researched MediaPipe and built face detection scripts; developed the event manager for handling recording event types. \\
+\hline
+Justin Solomon & Integration \& Data & Inter-process Communication (IPC) & Developed inter-process communication and the notification service across all modules. \\
+\hline
+\end{longtable}
+
+\section{Sprint Planning and Execution}
+
+The project was executed over \textbf{five monthly sprints}, each aligned to the academic calendar with a defined goal, planned activities, and a measurable status.
+
+\subsection{Sprint 1 -- November: System Integration \& Database Architecture}
+\textbf{Sprint Goal:} Establish the core integration path between modules and set up the data persistence layer.\\
+\textbf{Key Activities:}
 \begin{itemize}
-   \item Refinement of notification handling in the mobile app
-   \item Optimization of video buffering in the video manager
-   \item Improved error logging in the cloud manager
+    \item Integrated the video player into the Infotainment application.
+    \item Optimised the mobile application gallery for performance.
+    \item Calibrated detection algorithm thresholds for acceptable accuracy.
+    \item Designed and deployed the MySQL database schema for incident metadata.
 \end{itemize}
-While the Waterfall model restricts revisiting earlier stages, necessary adjustments were made without major architectural changes.
-\subsection{ Advantages and Limitations}
-The Waterfall model provided a disciplined and structured approach suited to a system with well-defined objectives. It ensured careful planning, development, and testing, ultimately resulting in a well-integrated surveillance system.
-However, limitations included:
+\textbf{Status:} \textit{Completed}
+
+\subsection{Sprint 2 -- December: Network Streaming \& Event Logic Refinement}
+\textbf{Sprint Goal:} Enable real-time video streaming across the network and refine the backend event handling pipeline.\\
+\textbf{Key Activities:}
 \begin{itemize}
-\item Early design decisions, such as the choice of detection algorithm or encoding settings, were difficult to change after implementation.
-\item Limited scope for incorporating mid-project user feedback.
+    \item Added manual recording triggers to the user interface.
+    \item Integrated local network streaming for MP4 incident files.
+    \item Transitioned the backend from C++ to Python for improved MediaPipe and Firebase Admin SDK integration.
 \end{itemize}
-Despite these limitations, the Waterfall model was appropriate for this project, ensuring predictability, clear documentation, and orderly progression from requirement analysis to deployment.
+\textbf{Status:} \textit{Completed}
+
+\subsection{Sprint 3 -- January: Integration \& Testing}
+\textbf{Sprint Goal:} Complete end-to-end integration of all independently developed modules and begin functional validation.\\
+\textbf{Key Activities:}
+\begin{itemize}
+    \item Finalised the signal handoff between the Surveillance Service and the Video Manager.
+    \item Integrated all independent modules into a unified pipeline.
+    \item Conducted functional testing and resolved integration-level bugs.
+\end{itemize}
+\textbf{Status:} \textit{Completed}
+
+\subsection{Sprint 4 -- February: Collaborative Logic \& Performance Testing}
+\textbf{Sprint Goal:} Implement collaborative vehicle awareness features and validate system performance under challenging conditions.\\
+\textbf{Key Activities:}
+\begin{itemize}
+    \item Implemented ``Nearby Cars'' detection logic based on GPS location data.
+    \item Automated the sharing of incident triggers to simulated nearby vehicles.
+    \item Conducted performance validation in low-light and high-motion environments.
+\end{itemize}
+\textbf{Status:} \textit{In Progress}
+
+\subsection{Sprint 5 -- March: Testing, Documentation \& Final Review}
+\textbf{Sprint Goal:} Finalise the system, complete project documentation, and prepare for submission and evaluation.\\
+\textbf{Key Activities:}
+\begin{itemize}
+    \item Finalised end-to-end system testing and polished user interfaces.
+    \item Fixed remaining bugs and conducted regression testing.
+    \item Completed the project report and prepared final presentation materials.
+\end{itemize}
+\textbf{Status:} \textit{In Progress}
+
+\section{Sprint Summary}
+
+\begin{longtable}{|p{1.4cm}|p{2.6cm}|p{6.8cm}|p{2.4cm}|}
+\hline
+\textbf{Sprint} & \textbf{Month} & \textbf{Focus Area} & \textbf{Status} \\
+\hline
+Sprint 1 & November & System Integration \& Database Architecture & Completed \\
+\hline
+Sprint 2 & December & Network Streaming \& Event Logic Refinement & Completed \\
+\hline
+Sprint 3 & January & Integration \& Testing & Completed \\
+\hline
+Sprint 4 & February & Collaborative Logic \& Performance Testing & In Progress \\
+\hline
+Sprint 5 & March & Testing, Documentation \& Final Review & In Progress \\
+\hline
+\end{longtable}
+
+\section{Advantages of Agile/Scrum for This Project}
+\begin{itemize}
+    \item \textbf{Parallel Development:} Each team member could develop and test their module independently within a sprint, with integration at sprint boundaries.
+    \item \textbf{Adaptability:} The mid-project migration from a C++ backend to Python was handled without disruption, which would have required a full reset under a rigid sequential model.
+    \item \textbf{Incremental Delivery:} Each sprint delivered a testable increment, making it easier to validate system behaviour at every stage.
+    \item \textbf{Continuous Feedback:} Sprint retrospectives allowed the team to continuously refine both technical and process-level decisions.
+\end{itemize}
 %\vspace{10pt}
 %\cleardoublepage
 %\clearpage
