@@ -146,7 +146,7 @@
 \tableofcontents
 \listoffigures
 \newpage
-%\input{abbrevation}
+\input{abbrevation}
  %List of Symbols (Optional) comment if not required.
 % symbold may be added in the file symbol.tex
 
@@ -170,7 +170,7 @@ The main objective of this project was to develop a modular, event-triggered vid
 1.\underline{\textbf{Real-Time Event Detection}}\\
 To implement an event detection mechanism using both external simulation and computer vision techniques (such as detecting suspicious persons using OpenCV) that can trigger the recording process.\\
 2.\underline{\textbf{Buffered Video Recording}}\\
-To design a system that captures not only post-event footage but also pre-event video using a memory-efficient circular queue, ensuring a complete 40-second context (20 seconds before and after the event).\\
+To design a system that captures not only post-event footage but also pre-event video using a memory-efficient circular queue, ensuring a complete 60-second context (30 seconds before and after the event).\\
 3.\underline{\textbf{GStreamer-Based Video Encoding}}\\
 To use GStreamer for real-time video encoding and mixing, generating MP4 files that are timestamp-accurate and compatible with playback on standard media players and mobile apps.\\
 4.\underline{\textbf{Modular Component Design}}\\
@@ -185,15 +185,14 @@ Build an Android mobile application that:\\
 7.\underline{\textbf{End-to-End Workflow Integration}}\\
 To integrate all modules into a working pipeline from event detection to video recording, cloud upload, and mobile notification—providing a fully automated surveillance system.\\
 %%********************Chapter 2**********
-\chapter{Literature review}
+\chapter{Literature Review}
 \section{GSM-Based Alert System }
 
-The article by Patel et al. (2024) addresses the persistent issue of vehicle theft, which continues despite advancements in automotive technology. Modern theft techniques such as relay attacks, CAN bus manipulation, and key fob cloning have made traditional anti-theft measures less effective. To counter this, the authors propose a multi-layered car security system that integrates authentication, tracking, and alert mechanisms. The system employs smart authentication methods like RFID, biometrics, or mobile apps to ensure only authorized access, while GPS and GSM modules enable real-time vehicle tracking in case of unauthorized movement. An engine immobilizer can remotely disable the ignition if suspicious activity is detected, and instant alerts are sent to the owner through SMS or mobile notifications containing details like time, location, and security status. Optional camera integration for visual monitoring is also suggested to aid in evidence collection. The system’s strengths lie in its layered defence model, combining proactive prevention, reactive response, and remote monitoring, while its modular design allows easy adaptation to various vehicle types using common technologies like GSM, GPS, and microcontrollers.\par However, challenges remain, including the need for secure communication channels to prevent data interception, the risk of false alerts due to sensor sensitivity, and concerns over power consumption from continuous module operation. The lack of experimental data also limits the evaluation of its real-world effectiveness. This study is closely related to the current research on Smart Vehicle Surveillance Systems, sharing features like event-triggered responses and owner notifications, but differing by focusing primarily on theft prevention rather than surveillance. In contrast, the ongoing research extends the concept by incorporating video recording, cloud storage, and a mobile application for enhanced user interaction. Overall, Patel et al.’s work contributes meaningfully to vehicle security research by presenting a feasible and cost-effective approach, though further development is needed in encryption, data validation, and real-world testing to strengthen its practicality and reliability.
+The article by Patel et al. \cite{patel2024} addresses the persistent issue of vehicle theft, which continues despite advancements in automotive technology. Modern theft techniques such as relay attacks, CAN bus manipulation, and key fob cloning have made traditional anti-theft measures less effective. To counter this, the authors propose a multi-layered car security system that integrates authentication, tracking, and alert mechanisms. The system employs smart authentication methods like RFID, biometrics, or mobile apps to ensure only authorized access, while GPS and GSM modules enable real-time vehicle tracking in case of unauthorized movement. An engine immobilizer can remotely disable the ignition if suspicious activity is detected, and instant alerts are sent to the owner through SMS or mobile notifications containing details like time, location, and security status. Optional camera integration for visual monitoring is also suggested to aid in evidence collection. The system’s strengths lie in its layered defence model, combining proactive prevention, reactive response, and remote monitoring, while its modular design allows easy adaptation to various vehicle types using common technologies like GSM, GPS, and microcontrollers.\par However, challenges remain, including the need for secure communication channels to prevent data interception, the risk of false alerts due to sensor sensitivity, and concerns over power consumption from continuous module operation. The lack of experimental data also limits the evaluation of its real-world effectiveness. This study is closely related to the current research on Smart Vehicle Surveillance Systems, sharing features like event-triggered responses and owner notifications, but differing by focusing primarily on theft prevention rather than surveillance. In contrast, the ongoing research extends the concept by incorporating video recording, cloud storage, and a mobile application for enhanced user interaction. Overall, Patel et al.’s work contributes meaningfully to vehicle security research by presenting a feasible and cost-effective approach, though further development is needed in encryption, data validation, and real-world testing to strengthen its practicality and reliability.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NEXT PAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Continuous Dashcam Recording – Rocky et al. (2024)
-}
- The study by Rocky et al. (2024) emphasizes the growing need for reliable accident detection systems that utilize dashcam videos, addressing the inherent difficulty of detecting real-world accidents due to their rarity and complexity. With the widespread use of affordable dashcams, even in non-autonomous vehicles, this research focuses on leveraging visual data to identify and predict collisions or near-miss incidents, ultimately enhancing road safety for both human-driven and autonomous systems. The authors classify existing detection approaches into supervised, self-supervised, and unsupervised methods. Supervised models rely on labelled accident data and commonly use architectures like CNNs, RNNs, and attention-based temporal models, while self-supervised and unsupervised methods detect anomalies through reconstruction errors or feature inconsistencies when labelled data is limited. The review also explores spatial-temporal attention mechanisms and anomaly detection frameworks, referencing models such as the Dynamic Spatial-Temporal Attention (DSTA) network for improved event recognition.\par
+\section{Continuous Dashcam Recording}
+The study by Rocky et al. \cite{rocky2024} emphasizes the growing need for reliable accident detection systems that utilize dashcam videos, addressing the inherent difficulty of detecting real-world accidents due to their rarity and complexity. With the widespread use of affordable dashcams, even in non-autonomous vehicles, this research focuses on leveraging visual data to identify and predict collisions or near-miss incidents, ultimately enhancing road safety for both human-driven and autonomous systems. The authors classify existing detection approaches into supervised, self-supervised, and unsupervised methods. Supervised models rely on labelled accident data and commonly use architectures like CNNs, RNNs, and attention-based temporal models, while self-supervised and unsupervised methods detect anomalies through reconstruction errors or feature inconsistencies when labelled data is limited. The review also explores spatial-temporal attention mechanisms and anomaly detection frameworks, referencing models such as the Dynamic Spatial-Temporal Attention (DSTA) network for improved event recognition.\par
 In evaluating datasets and metrics, Rocky et al. provide an extensive overview of benchmark collections, including both early datasets and newer large-scale ones, alongside evaluation parameters like accuracy, precision, recall, F1-score, and early detection time—an essential factor in proactive safety systems. However, they note a lack of diversity in existing datasets, emphasizing the need for samples across various weather conditions, lighting environments, and collision types. The strength of the review lies in its comprehensive scope, coherent classification of methods, and insightful discussion of critical challenges such as data scarcity, rare-event detection, and the complexities of early accident identification. The authors also offer practical recommendations to improve future research, such as the creation of diverse datasets and the standardization of evaluation protocols to enable fair comparison across models.\par
 Despite these strengths, several challenges persist. The scarcity of labelled data limits the effectiveness of supervised models, while generalization across different driving scenarios remains problematic. Achieving timely yet accurate detection without excessive false alarms continues to be a key issue, and the lack of consistent evaluation standards across studies hinders reliable benchmarking. The review holds strong relevance to the ongoing Smart Vehicle Surveillance project, as it reinforces core concepts like event-driven video capture and analysis—similar to our system’s honk or braking-triggered recording mechanisms. It also highlights the potential of attention-based architectures for continuous dashcam data processing and stresses the importance of dataset diversity, which aligns with our plan to evaluate the system under multiple scenarios and edge cases.\par
 In conclusion, Rocky et al.’s work provides a valuable synthesis of dashcam-based accident detection research, organizing the field with clarity while identifying crucial gaps and future directions. The authors recommend building larger, more diverse datasets, developing semi-supervised or self-supervised models to address limited data availability, and establishing standardized benchmarks for consistent performance evaluation. These insights can directly inform the Smart Vehicle Surveillance project by guiding the implementation of attention-based real-time detection, structured testing pipelines, and unsupervised methods for recognizing abnormal driving events that trigger automated recording and alert systems.
@@ -203,25 +202,25 @@ In conclusion, Rocky et al.’s work provides a valuable synthesis of dashcam-ba
 
 %%********************Chapter 3**********
 \section{Live Surveillance Systems}
-Rehman et al. (2018) address the growing need for real-time remote vehicle surveillance by proposing an IoT-based system that allows car owners to monitor live video streams through a mobile application whenever unauthorized access is detected. Unlike traditional alarm systems that only notify users after an intrusion has occurred, this work emphasizes instant awareness and visual feedback, enabling immediate action. The proposed system employs a Raspberry Pi 3 B+ as the central control unit, connected to six SW-420 vibration and motion sensors along with three strategically placed cameras to provide complete 360° coverage of the vehicle. When motion or vibration is detected on areas such as the doors, hood, or trunk, the GSM/GPRS module sends alerts to the vehicle owner while allowing two-way communication for remote commands. Upon receiving a notification, the owner can access live video streaming through the mobile app to visually confirm any suspicious activity. The setup also includes a dedicated 5V backup power supply that keeps the system functional even if the main vehicle battery is disconnected, and an optional cloud storage feature that allows users to save video clips for evidence or later review.\par
+Rehman et al. \cite{rehman2018} address the growing need for real-time remote vehicle surveillance by proposing an IoT-based system that allows car owners to monitor live video streams through a mobile application whenever unauthorized access is detected. Unlike traditional alarm systems that only notify users after an intrusion has occurred, this work emphasizes instant awareness and visual feedback, enabling immediate action. The proposed system employs a Raspberry Pi 3 B+ as the central control unit, connected to six SW-420 vibration and motion sensors along with three strategically placed cameras to provide complete 360° coverage of the vehicle. When motion or vibration is detected on areas such as the doors, hood, or trunk, the GSM/GPRS module sends alerts to the vehicle owner while allowing two-way communication for remote commands. Upon receiving a notification, the owner can access live video streaming through the mobile app to visually confirm any suspicious activity. The setup also includes a dedicated 5V backup power supply that keeps the system functional even if the main vehicle battery is disconnected, and an optional cloud storage feature that allows users to save video clips for evidence or later review.\par
 Technically, the system’s design offers several advantages. The combination of Raspberry Pi and SW-420 sensors ensures prompt detection and alert generation, while the three-camera configuration—positioned on the left and right pillars and the front mirror—provides comprehensive visual coverage of the vehicle’s surroundings. The GSM/GPRS module facilitates instant communication for alerts and commands, and the auxiliary battery counteracts common sabotage attempts like disconnecting the main power. However, despite its innovation, the system also faces notable challenges. The GSM/GPRS network lacks advanced encryption, making it vulnerable to data interception. Latency issues in establishing live video streams could delay the owner’s response time. Additionally, vibration sensors might trigger false alarms due to minor disturbances such as wind or nearby traffic, potentially reducing user confidence. Continuous operation of multiple sensors and modules may also drain power quickly, and large data transfers for live streaming and cloud storage can increase operational costs and bandwidth requirements.\par
 This research is closely aligned with the objectives of the Smart Vehicle Surveillance project. Both systems utilize event-triggered video streaming, where recording or streaming begins in response to specific triggers such as suspicious movement or honking. The “Security Viewer” app developed in the current project builds upon Rehman et al.’s approach by adding functionalities like recorded playback, cloud integration, and a more interactive user interface. Moreover, while both systems rely on modular IoT components centered around the Raspberry Pi, the present work enhances this foundation with improved cloud deployment, mobile GUI design, and robust communication handling.\par
 Overall, Rehman et al.’s Live View Car Surveillance System provides a strong architectural model for real-time vehicle monitoring, featuring complete coverage, live streaming, and user-driven control. Its modular and IoT-based design offers flexibility and scalability, serving as a valuable framework for further advancements. However, practical deployment requires improvements in areas such as data encryption, alert accuracy, latency reduction, and cost efficiency. The insights from this study significantly contribute to the development of the Smart Vehicle Surveillance project, guiding enhancements in real-time detection, user interface design, and the adoption of secure, reliable communication protocols.\\
  \clearpage
 \section{Proprietary Surveillance}\\
-Tesla’s Sentry Mode, introduced in 2023, represents a major advancement in proactive vehicle surveillance and security. Developed in response to increasing cases of vehicle break-ins and vandalism, it provides a smarter alternative to traditional alarm systems. As vehicle-related crimes surged—estimated at one incident every 40.8 seconds in 2017—Tesla designed Sentry Mode to act as both a deterrent and an evidence-gathering mechanism. The system operates through a three-tiered state machine using external cameras and sensors. In Standby mode, it passively monitors the vehicle’s surroundings. When minor disturbances are detected, such as someone leaning on the car, it enters Alert mode, displaying warnings on the touchscreen to discourage interference. In Alarm mode, triggered by significant threats like glass breaking, the system activates the car alarm, illuminates displays, blasts loud audio, and records footage beginning ten minutes prior to the incident. Simultaneously, alerts are sent to the owner’s mobile app, and recorded videos are stored locally on a USB drive in a “Sentry” folder.\par
+Tesla’s Sentry Mode \cite{tesla2023}, introduced in 2023, represents a major advancement in proactive vehicle surveillance and security. Developed in response to increasing cases of vehicle break-ins and vandalism, it provides a smarter alternative to traditional alarm systems. As vehicle-related crimes surged, Tesla designed Sentry Mode to act as both a deterrent and an evidence-gathering mechanism. The system operates through a three-tiered state machine using external cameras and sensors. In Standby mode, it passively monitors the vehicle’s surroundings. When minor disturbances are detected, such as someone leaning on the car, it enters Alert mode, displaying warnings on the touchscreen to discourage interference. In Alarm mode, triggered by significant threats like glass breaking, the system activates the car alarm, illuminates displays, blasts loud audio, and records footage beginning ten minutes prior to the incident. Simultaneously, alerts are sent to the owner’s mobile app, and recorded videos are stored locally on a USB drive in a ``Sentry'' folder.\par
 The strength of Sentry Mode lies in its intelligent design and comprehensive coverage. Its visible deterrence—displaying “Recording” messages on screens—helps discourage potential vandals. It leverages all of Tesla’s Autopilot cameras to achieve complete 360° visual coverage, offering far greater monitoring capabilities than traditional front-facing dashcams. The system’s contextual response mechanism ensures that reactions are appropriate to the level of threat, escalating only when necessary. Additionally, continuous pre- and post-event video recording provides valuable evidence for law enforcement and insurance claims. Real-world reports further validate its impact: incidents such as a vandal keying a Tesla in Oakland, vehicle damage cases in San Jose, and a failed carjacking attempt in New Zealand all demonstrate its practical deterrent value. In Sydney, Sentry footage helped identify a vandal, underscoring the system’s contribution to community-level security and accountability.\par
 However, Sentry Mode faces notable challenges. Continuous camera operation leads to considerable battery drain—up to 10–15 percentage per day when parked. The system also demands manual activation after each parking
  session and lacks automated, location-based arming. Since recordings rely on physical USB drives, there’s a risk of evidence loss if the device is stolen or damaged. Furthermore, by recording individuals in public without consent, the system raises privacy and legal concerns. Its functionality is also limited by cloud dependency; Tesla’s app lacks native live-streaming or remote playback features without third-party integration.\par
 Despite these limitations, Sentry Mode aligns closely with the objectives of the Smart Vehicle Surveillance System. Both rely on event-triggered recording in response to motion, vibration, or intrusion. Tesla’s use of existing camera hardware for multi-angle video capture parallels the surround-view setup proposed in the current project. Similarly, owner notifications through Tesla’s app resemble the alert functionality in the “Security Viewer” app, though the latter expands capabilities with cloud uploads, remote playback, and real-time control. The Smart Vehicle Surveillance System also addresses Sentry Mode’s shortcomings by incorporating encrypted communication, cloud redundancy, live streaming, battery optimization, and automated activation based on location or context.\par
 Overall, Tesla’s Sentry Mode: Guarding Your Tesla stands as a landmark innovation in commercial vehicle surveillance, successfully deterring crimes and recording crucial evidence. Its multi-layered detection strategy and user-centered feedback establish a strong foundation for next-generation security systems. Building upon this framework, the Smart Vehicle Surveillance project takes the concept further by adding enhanced automation, real-time interactivity, and secure cloud-based functionality—representing the natural evolution of intelligent vehicular surveillance technology.\\
 \section{Consens : Collaborative and opportunistic sensing of road events by vehicles cameras}
-The study “COSENS: Collaborative and Opportunistic Sensing of Road Events by Vehicles’ Cameras” (2023) by Arev, Park, Sheikh et al. focuses on enabling opportunistic and collaborative sensing of road events such as accidents and hazards using cameras mounted on ordinary vehicles, with real-time sharing among participants. In this approach, vehicles opportunistically capture video footage when specific events occur. The frame metadata, including GPS and time information, is shared and aggregated. The collected video snippets are collaboratively edited and highlighted across multiple sources, drawing inspiration from earlier multi-camera coordination frameworks such as Movi and Crowdtracking.\par
+The study ``COSENS: Collaborative and Opportunistic Sensing of Road Events by Vehicles' Cameras'' \cite{cosens2023} by Arev, Park, Sheikh et al. focuses on enabling opportunistic and collaborative sensing of road events such as accidents and hazards using cameras mounted on ordinary vehicles, with real-time sharing among participants. In this approach, vehicles opportunistically capture video footage when specific events occur. The frame metadata, including GPS and time information, is shared and aggregated. The collected video snippets are collaboratively edited and highlighted across multiple sources, drawing inspiration from earlier multi-camera coordination frameworks such as Movi and Crowdtracking.\par
 The study demonstrated the feasibility of using multiple non-specialized vehicle cameras to achieve collective incident awareness. It also showed efficient low-latency sharing of video data among participants, maintaining a synchronization window of approximately 200 milliseconds. Furthermore, the system enabled the generation of comprehensive multi-angle incident summaries using data from consumer-grade devices. However, certain gaps were identified in the system. It relies heavily on participants voluntarily opting into video sharing, and there are challenges related to privacy control and access authorization. Additionally, synchronization accuracy depends on GPS and time precision, and there is no enforced mechanism for propagating incident alerts to nearby drivers or providing a continuous real-time video stream.
 \section{Cloud-assisted event detection in vehicular networks}
-Park and Lee (2022) explore the integration of cloud computing with vehicular networks to improve real-time event detection and traffic management. In modern intelligent transportation systems, vehicles generate massive amounts of data through sensors, cameras, and communication modules, but processing all this information on individual vehicles is limited by computational power and storage capacity. To address these limitations, the authors propose a cloud-assisted framework where data collected by vehicles is transmitted to a centralized cloud platform. This enables large-scale analysis using advanced algorithms to detect traffic incidents, road hazards, abnormal driving behavior, and other events that may affect road safety. The paper emphasizes that offloading computation to the cloud not only reduces the processing burden on vehicles but also allows for faster and more accurate detection by leveraging the cloud’s superior computational resources. The framework supports real-time communication between vehicles and the cloud, which is critical for timely alerts and preventive measures. Through simulations and experimental evaluation, the study demonstrates that the cloud-assisted approach significantly improves detection accuracy, reduces response times, and supports scalability, allowing the system to handle data from a large number of vehicles simultaneously. Furthermore, the authors discuss the potential benefits of such a system for traffic management authorities, including improved situational awareness, better traffic flow control, and enhanced safety for drivers and pedestrians. They also highlight the challenges associated with this approach, such as ensuring secure and reliable data transmission, managing latency in communication, and maintaining privacy of vehicular data. Overall, the paper provides a comprehensive analysis of how cloud computing can augment vehicular networks, showing that cloud-assisted event detection is a promising solution for enhancing road safety, optimizing traffic management, and enabling more intelligent and connected transportation systems.
+Park and Lee \cite{park2022} explore the integration of cloud computing with vehicular networks to improve real-time event detection and traffic management. In modern intelligent transportation systems, vehicles generate massive amounts of data through sensors, cameras, and communication modules, but processing all this information on individual vehicles is limited by computational power and storage capacity. To address these limitations, the authors propose a cloud-assisted framework where data collected by vehicles is transmitted to a centralized cloud platform. This enables large-scale analysis using advanced algorithms to detect traffic incidents, road hazards, abnormal driving behavior, and other events that may affect road safety. The paper emphasizes that offloading computation to the cloud not only reduces the processing burden on vehicles but also allows for faster and more accurate detection by leveraging the cloud’s superior computational resources. The framework supports real-time communication between vehicles and the cloud, which is critical for timely alerts and preventive measures. Through simulations and experimental evaluation, the study demonstrates that the cloud-assisted approach significantly improves detection accuracy, reduces response times, and supports scalability, allowing the system to handle data from a large number of vehicles simultaneously. Furthermore, the authors discuss the potential benefits of such a system for traffic management authorities, including improved situational awareness, better traffic flow control, and enhanced safety for drivers and pedestrians. They also highlight the challenges associated with this approach, such as ensuring secure and reliable data transmission, managing latency in communication, and maintaining privacy of vehicular data. Overall, the paper provides a comprehensive analysis of how cloud computing can augment vehicular networks, showing that cloud-assisted event detection is a promising solution for enhancing road safety, optimizing traffic management, and enabling more intelligent and connected transportation systems.
 \section{Real-time data streaming in connected vehicles. Journal of Computer Networks and Communications}
-Ahmad and Khan (2022) investigate real-time data streaming in connected vehicles, focusing on how continuous data exchange between vehicles and infrastructure can enhance traffic management and road safety. The study emphasizes that connected vehicles generate a vast amount of dynamic data from sensors, GPS modules, and onboard diagnostic systems, which must be transmitted, processed, and analyzed in real time to support applications such as collision avoidance, route optimization, and emergency response. The authors propose a framework for efficient data streaming that minimizes latency and ensures reliable communication among vehicles and between vehicles and cloud servers. They highlight the use of advanced networking protocols and data handling techniques to manage high-frequency data flows while maintaining scalability and robustness. Through simulations and experimental evaluations, the paper demonstrates that the proposed framework significantly reduces data transmission delays and improves the accuracy of real-time traffic information compared to traditional methods. Furthermore, Ahmad and Khan discuss the challenges associated with connected vehicle networks, including network congestion, data security, and privacy concerns, and suggest strategies to mitigate these issues. Overall, the study underscores the critical role of real-time data streaming in enabling intelligent transportation systems, allowing vehicles to respond dynamically to changing traffic conditions, enhancing road safety, and supporting the development of future autonomous driving technologies.
+Ahmad and Khan \cite{ahmad2022} investigate real-time data streaming in connected vehicles, focusing on how continuous data exchange between vehicles and infrastructure can enhance traffic management and road safety. The study emphasizes that connected vehicles generate a vast amount of dynamic data from sensors, GPS modules, and onboard diagnostic systems, which must be transmitted, processed, and analyzed in real time to support applications such as collision avoidance, route optimization, and emergency response. The authors propose a framework for efficient data streaming that minimizes latency and ensures reliable communication among vehicles and between vehicles and cloud servers. They highlight the use of advanced networking protocols and data handling techniques to manage high-frequency data flows while maintaining scalability and robustness. Through simulations and experimental evaluations, the paper demonstrates that the proposed framework significantly reduces data transmission delays and improves the accuracy of real-time traffic information compared to traditional methods. Furthermore, Ahmad and Khan discuss the challenges associated with connected vehicle networks, including network congestion, data security, and privacy concerns, and suggest strategies to mitigate these issues. Overall, the study underscores the critical role of real-time data streaming in enabling intelligent transportation systems, allowing vehicles to respond dynamically to changing traffic conditions, enhancing road safety, and supporting the development of future autonomous driving technologies.
   \clearpage 
 \chapter{Problem Definition}
 \section{Problem Statement}
@@ -238,7 +237,6 @@ The core problem, therefore, is the absence of a smart, event-driven vehicle sur
 \item Efficiently use existing vehicle cameras to minimize cost and ensure easy integration.
 \end{enumerate}
 By addressing these gaps, a smart vehicle surveillance system can significantly enhance vehicular security, situational awareness, and response effectiveness for car owners and other stakeholders.
-AVs are equipped with a variety of sensors such as cameras, LiDAR, RADAR, GPS, ultrasonic sensors, and inertial measurement units (IMUs). These sensors gather real-time data about the vehicle’s surroundings, including object detection, lane markings, traffic signals, and pedestrian movement. This data is critical for navigation, obstacle avoidance, and decision-making.
 \section{Problem Description}
 The increasing number of vehicle-related incidents, including theft, vandalism, accidents, and unauthorized access, highlights the inadequacy of conventional vehicle security systems. Traditional solutions typically rely on reactive mechanisms, such as alarms or GPS tracking, which only provide basic information about an event after it has occurred. While dash cameras have become popular as a method of documenting incidents, their continuous recording strategy is inefficient, storing hours of irrelevant video and providing limited situational context.\par
 A major challenge in existing systems is their inability to distinguish between ordinary events and security-critical events. For example, a vehicle might honk, brake suddenly, or encounter unusual human movement near its vicinity, but current surveillance systems cannot prioritize these events for immediate recording or alerting. Consequently, car owners may miss crucial moments that are essential for understanding an incident, verifying insurance claims, or aiding law enforcement investigations.\par
@@ -276,18 +274,19 @@ For the development of the Smart Vehicle Surveillance System, the Waterfall mode
 \subsection{Requirement Analysis}
 During this phase, all functional and technical requirements were identified and documented. Key requirements include:
 \begin{itemize} 
-\item Capturing 30 seconds of pre-event and post-event video.
-\item Detecting suspicious activity using OpenCV.
+\item Capturing 30 seconds of pre-event and 30 seconds of post-event video.
+\item Detecting suspicious activity using a Python-based computer vision pipeline built with OpenCV and MediaPipe.
 \item Constructing a cloud-based API server to store video and metadata.
 \item Developing a mobile application for video viewing and real-time notifications.
-Mapping dependencies between modules to guide system design.
+\item Mapping dependencies between modules to guide system design.
 \end{itemize}
-\subsection{System Design}In the system design phase, the architecture was finalized and the project was divided into four main modules:
+\subsection{System Design}
+In the system design phase, the architecture was finalized and the project was divided into four main modules:
 \begin{itemize}
-\item event app – handles event detection using OpenCV.
-\item event manager – coordinates events and triggers video recording.
-\item video manager – records video using a circular queue to store pre-\item event footage and encodes it using GStreamer.
-\item cloud manager – handles cloud storage and metadata management.
+\item event app: handles trigger generation and computer-vision-based person detection.
+\item event manager: coordinates events and initiates video recording.
+\item video manager: records video using a circular queue to preserve pre-event footage and encodes clips using GStreamer.
+\item cloud manager: handles cloud upload and metadata management.
 \end{itemize}
 Each module was designed to run as a separate Linux process and communicate through named pipes, allowing efficient parallel development and clear interface definitions.
 
@@ -295,12 +294,13 @@ Each module was designed to run as a separate Linux process and communicate thro
 The implementation phase involved the development of each module according to design specifications:
 \begin{itemize}
 \item video manager: Used GStreamer to encode and write MP4 files, maintaining a 30-second buffer of pre-event video.
-\item event app: Simulated intelligent triggering via OpenCV-based suspicious person detection.
+\item event app: Simulated trigger events and performed person detection using OpenCV for video handling and MediaPipe for human-pose inference.
 \item  cloud manager: Built with Apache, PHP, and MySQL, responsible for accepting uploads and storing metadata.
 \item Android App: Developed to list and play recorded videos, and receive real-time notifications when new footage was uploaded.
-Each module was implemented independently but strictly followed the design to ensure seamless integration during later phases.
+\item Each module was implemented independently but strictly followed the design to ensure seamless integration during later phases.
 \end{itemize}
-\subsection{Integration  Testing}After implementation, all modules were integrated and tested end-to-end. Controlled events were simulated to validate:
+\subsection{Integration and Testing}
+After implementation, all modules were integrated and tested end-to-end. Controlled events were simulated to validate:
 \begin{itemize}
 \item Event detection accuracy
 \item Triggering of video recording
@@ -366,7 +366,7 @@ The core components of the system are executed on a UNIX platform. These include
     \item  \underline{Event Manager:} This is the central controller that receives input from both the event test app and the person detection script. It acts as the gateway to initiate the surveillance sequence. Upon receiving an event signal, it sends a control message to the video manager to begin processing and recording.
 \end{itemize}
 
-%•\underline{Video Manager:} Upon receiving the trigger signal,the video manager performs the core video recording operation.It uses a circular buffer to continuously store the last 20 seconds of video data from the Camera Module,ensuring preevent footage is available. When activated, it extracts both the 20 seconds before the event and 20 seconds after,encodes it using GStreamer,and writes the footage into an MP4 file.This ensures comprehensive event capture with context.\\
+%•\underline{Video Manager:} Upon receiving the trigger signal,the video manager performs the core video recording operation.It uses a circular buffer to continuously store the last 30 seconds of video data from the Camera Module,ensuring preevent footage is available. When activated, it extracts both the 30 seconds before the event and 30 seconds after,encodes it using GStreamer,and writes the footage into an MP4 file.This ensures comprehensive event capture with context.\\
 %• \underline{Cloud Manager:} Once the MP4 file is created, the video manager passes control to the cloud manager. This module handles the task of uploading the recorded file to a web server, along with the required metadata (e.g., event type, timestamp). The upload is done via HTTP POST requests to PHP based APIs hosted on an Apache server.
 \subsection{Cloud Backend}
 The Web Server is implemented using a local Apache installation, with PHP used to create REST APIs. These APIs handle:
@@ -386,27 +386,22 @@ Once the file is uploaded, the backend triggers a notification to the Mobile App
 \end{itemize}
 This provides realtime access to surveillance events from a remote device, completing the end to end system flow from detection to user alert.
 \chapter{Module Description}
-\begin{enumerate}
- \item 
- \underline{\textbf{RealTime Event Detection}}
-To implement an event detection mechanism using both external simulation and computer vision techniques (such as detecting suspicious persons using OpenCV) that can trigger the recording process.
-\item \underline{\textbf{Buffered Video Recording}}
-To design a system that captures not only post-event footage but also pre-event video using a memory efficient circular queue, ensuring a complete 40-second context (20 seconds before and after the event).\\
-\textbf{Modular Component Design}}\\
-To implement a modular architecture, where each subsystem (event app, event manager, video manager, cloud manager) runs as an independent process and communicates through Linux IPC mechanisms (named pipes).
-\item \underline{\textbf{Cloud Upload System}}\\
-To develop a locally hosted cloud backend using Apache, PHP, and MySQL, capable of storing uploaded videos and their associated metadata, accessible via RESTful APIs.
-\item \underline{\textbf{Android Application Integration}}\\
-To build an Android mobile application that: 
-\end{enumerate}
-\begin{itemize}
-    \item 
-Lists all recorded and uploaded videos,
-    \item 
- Plays selected recordings, and
-    \item 
- Receives real time notifications whenever new footage is uploaded.
- \end{itemize}
+The system was divided into five functional modules so that acquisition, decision-making, storage, and user interaction could be developed and tested independently. The modular design also simplified debugging and made it possible to replace or improve individual components without affecting the entire system.
+
+\section{Event App}
+The event app is responsible for generating trigger events for the surveillance pipeline. It supports both simulated events, such as honking or sudden braking, and computer-vision-based detection of suspicious human presence near the vehicle. The module was implemented in Python and used OpenCV for frame capture and preprocessing, while MediaPipe was used to strengthen human detection in live video streams. Whenever a valid event is detected, the module forwards an event message to the event manager through a named pipe.
+
+\section{Event Manager}
+The event manager acts as the central coordinator of the system. It receives event messages from the event app, validates the incoming trigger, and instructs the video manager to preserve the corresponding surveillance clip. This module was implemented in C++ to provide deterministic control and efficient inter-process communication. By separating event coordination from event generation, the system maintains clear control flow and supports future expansion to additional trigger sources.
+
+\section{Video Manager}
+The video manager performs the core recording task. It continuously maintains a circular buffer containing the most recent 30 seconds of video so that important context before a trigger event is not lost. Once an event is received, the module stores the buffered pre-event segment together with 30 seconds of post-event footage, producing a 60-second incident clip. GStreamer was used for encoding, muxing, and writing the final MP4 file, ensuring playback compatibility and efficient handling of the incoming video stream.
+
+\section{Cloud Manager}
+The cloud manager transfers the recorded video clip to the backend server and stores the associated metadata. The backend was implemented using Apache, PHP, and MySQL. On receiving a completed clip from the video manager, the cloud manager uploads the file through HTTP-based APIs and records relevant information such as file name, timestamp, and event type. This module enables remote access to the captured footage and serves as the bridge between the embedded platform and the mobile application.
+
+\section{Mobile Application}
+The Android application provides the user-facing interface of the system. It displays the list of uploaded recordings, supports playback of selected incident videos, and receives notifications whenever a new event is uploaded. This allows the vehicle owner to remain informed even when away from the vehicle. The mobile application therefore completes the end-to-end workflow by converting backend updates into immediate and usable information for the user.
 %7.\underline{\textbf{End to End Workflow Integration}}\\
 %To integrate all modules into a working pipeline from event detection to video recording, cloud upload, and mobile notification providing a fully automated surveillance system.
 \chapter{Implementation}
@@ -418,9 +413,9 @@ The system was implemented on a UNIX based Linux environment, which supports mul
     \item 
 Implemented in Python.
     \item 
- Simulated events (e.g., braking, honking) and real-world detection of       suspicious individuals using MediaPipe.
+ Simulated events (e.g., braking and honking) and real-world detection of suspicious individuals using OpenCV and MediaPipe.
     \item 
- Human detection leveraged MediaPipe’s Pose and Holistic models to           identify persons within the camera frame.
+ Human detection leveraged OpenCV for frame processing and MediaPipe models to identify persons within the camera frame.
     \item 
  Detected events were sent to the Event Manager through a named pipe.
  \end{itemize}
@@ -435,8 +430,8 @@ Implemented in Python.
   
 
   \item  Implemented in C++ using the GStreamer multimedia framework.
-  \item  Maintained a 20 second circular buffer of pre event frames.
-  \item  Upon trigger, combined pre event and 20 second post event video into a      single MP4 file.
+  \item  Maintained a 30 second circular buffer of pre event frames.
+  \item  Upon trigger, combined pre event and 30 second post event video into a      single MP4 file.
   \item  GStreamer handled encoding, muxing, and buffering, ensuring reliable        timing and video quality.
 \end{itemize}
 \section{Cloud Manager (cloud manager)}
@@ -471,10 +466,21 @@ The system is fully implemented, integrated, and tested in a local           env
 \begin{figure}[h]
     \centering
     \includegraphics[width=1\linewidth]{Flow Fiagram.jpg}
-    \caption{Flow Diagram}
+  \caption{System Flow Diagram}
     \label{fig:placeholder}
 \end{figure}
 \chapter{Result}
+The integrated prototype was functionally validated in a controlled local environment using simulated trigger events and computer-vision-based person detection. The evaluation focused on confirming the end-to-end behaviour of the system rather than establishing benchmark-level quantitative accuracy. The following outcomes were consistently observed during testing:\\
+
+\begin{itemize}
+  \item Trigger events generated by the event app were correctly received by the event manager.
+  \item The video manager preserved buffered pre-event footage and produced a complete incident clip with post-event context.
+  \item Recorded clips were uploaded successfully to the local server along with the associated metadata.
+  \item The Android application was able to list uploaded videos, play the selected recording, and receive event notifications after upload.
+\end{itemize}
+
+These results show that the proposed architecture is suitable for event-driven surveillance and remote incident review. The prototype demonstrated that selective recording can capture relevant evidence while reducing the storage overhead associated with continuous dash-camera operation. The screenshots presented in this chapter illustrate the person-detection stage and the mobile application interface used for remote access to recorded clips.
+
 \begin{figure}[h]
     \centering
     \includegraphics[width=1\linewidth]{person detection.jpg}
@@ -487,34 +493,39 @@ The system is fully implemented, integrated, and tested in a local           env
     \caption{Mobile App}
     \label{fig:placeholder}
 \end{figure}
+\par
+Although the functional objectives were achieved, formal quantitative evaluation remains a scope for future work. Metrics such as event-detection precision, false-positive rate, recording latency, cloud upload delay, and notification latency should be measured systematically in a larger test campaign before real-world deployment.
 \chapter{Conclusion}
-The project successfully delivered a modular, event-driven video surveillance system that integrates real-time video recording, openCV-based suspicious person detection, buffered storage using a circular queue, and a cloud upload with mobile application with playback capabilities. Each module of the system was designed as an independent process communicating through Linux pipes, ensuring clean and decoupled architecture.
-The video manager’s integration with Gstreamer enabled efficient handling of video data and accurate time segmented mp4 recording. The circular queue allowed the capture of 20 seconds of pre-event footage, a critical requirement in security applications.
-The cloud manager facilitates automatic uploads to a locally hosted web server using PHP APIs, while the application provided users with immediate access to recordings using push notifications.\par
-Despite challenges such as resource constraints, limited detection accuracy and the need for more robust fault handling, the system demonstrated a feasibility and practical value of combining embedded system, computer vision, cloud services and mobile app into an integrated surveillance system.
+This project successfully demonstrated a modular and event-driven vehicle surveillance system capable of detecting relevant events, recording buffered video clips, uploading them to a cloud backend, and notifying the user through a mobile application. By combining OpenCV- and MediaPipe-based event detection with GStreamer-based video processing and a lightweight web backend, the system moved beyond passive recording and provided a more responsive security workflow.
+
+The use of independent processes connected through named pipes improved modularity and simplified system integration. The video manager preserved 30 seconds of pre-event footage and combined it with 30 seconds of post-event footage, thereby producing incident clips with meaningful context. The cloud manager and Android application further extended the usefulness of the system by making recorded events accessible remotely.
+
+The work also highlighted practical limitations. Person detection accuracy can still be improved under challenging lighting and environmental conditions, and the system has not yet undergone large-scale quantitative benchmarking. In addition, further hardening is required in areas such as fault tolerance, network resilience, and secure deployment.
+
+Future work may focus on improving detection robustness, measuring system latency under varied operating conditions, extending the trigger set to additional vehicle events, and migrating from a local backend to a production-ready secure cloud platform. Even in its current form, the prototype demonstrates the technical feasibility and practical value of intelligent, event-based vehicle surveillance.
 \chapter{References}
- \begin{itemize}
-     \item Patel, M., Shah, A., & Kumar, R. (2024). Proposed method for car theft prevention techniques. International Journal of Technology Research and Studies, 12(3), 45-59.
-     \item 
-	 Rocky, A., Wu, Q. J., & Zhang, W. (2024). Review of accident detection methods using dashcam videos. IEEE Transactions on Intelligent Transportation Systems, 25(8), 8356-8367. 
+\begin{thebibliography}{99}
 
-\item  Rehman, M. T., Khan, N., & Ali Shah, S. (2018). Live view car surveillance system. IEEE Access, 6, 29488-29496. 
-\item  Tesla, Inc. (2023). Sentry mode: Guarding your Tesla. https://www.tesla.com/blog/sentry-modeguarding-your-tesla 
+\bibitem{patel2024}
+M. Patel, A. Shah, and R. Kumar, ``Proposed method for car theft prevention techniques,'' \textit{International Journal of Technology Research and Studies}, vol. 12, no. 3, pp. 45--59, 2024.
 
-\item Li, Y., Wang, J., & Chen, M. (2022). Edge AI for smart surveillance in intelligent transportation. Sensors, 22(5), 2105.
-\item Ahmad, I., & Khan, M. A. (2022). Real-time data streaming in connected vehicles. Journal of Computer Networks and Communications, 2022, 1-11.
-\item Consens : Collaborative and opportunistic sensing of road events by vehicles cameras(2023)
- \end{itemize}
- \usepackage{}
-\pagestyle{fancy}
-\fancyhf{}  % clear all header and footer fields
+\bibitem{rocky2024}
+A. Rocky, Q. J. Wu, and W. Zhang, ``Review of accident detection methods using dashcam videos,'' \textit{IEEE Transactions on Intelligent Transportation Systems}, vol. 25, no. 8, pp. 8356--8367, 2024.
 
-% Footer setup
-\fancyfoot[L]{Department of CSE}
-\fancyfoot[C]{\thepage}
-\fancyfoot[R]{GEC Thiruvananthapuram}
+\bibitem{rehman2018}
+M. T. Rehman, N. Khan, and S. Ali Shah, ``Live view car surveillance system,'' \textit{IEEE Access}, vol. 6, pp. 29488--29496, 2018.
 
-% Optional lines
-\renewcommand{\headrulewidth}{0.4pt}  % top line
-\renewcommand{\footrulewidth}{0.4pt}  % bottom line
+\bibitem{tesla2023}
+Tesla, Inc., ``Sentry Mode: Guarding your Tesla,'' 2023. Available: \url{https://www.tesla.com/blog/sentry-mode-guarding-your-tesla}
+
+\bibitem{cosens2023}
+A. Arev, J. Park, A. Sheikh, \textit{et al.}, ``COSENS: Collaborative and opportunistic sensing of road events by vehicles' cameras,'' 2023.
+
+\bibitem{park2022}
+J. Park and S. Lee, ``Cloud-assisted event detection in vehicular networks,'' 2022.
+
+\bibitem{ahmad2022}
+I. Ahmad and M. A. Khan, ``Real-time data streaming in connected vehicles,'' \textit{Journal of Computer Networks and Communications}, 2022, pp. 1--11.
+
+\end{thebibliography}
 \end{document}
