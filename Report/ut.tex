@@ -1,0 +1,52 @@
+\chapter{Unit Testing (UT)}
+\section{Objective}
+The unit-testing objective is to verify correctness of module-level logic before full integration. The focus is on deterministic event handling, recording boundaries, metadata consistency, and API response behavior.
+
+\section{Unit Test Scope}
+\begin{itemize}
+\item Event parsing and classification logic.
+\item Trigger-to-record command dispatch.
+\item Buffer window assembly (pre-event and post-event).
+\item Upload request creation and retry behavior.
+\item Metadata generation and persistence mapping.
+\end{itemize}
+
+\section{Test Environment}
+\begin{itemize}
+\item Development host running the project Python modules.
+\item Local backend services (Apache, PHP, MySQL).
+\item Controlled test inputs (simulated honk/brake/person events).
+\end{itemize}
+
+\section{Representative Unit Test Cases}
+\begin{longtable}{|p{1.7cm}|p{4.0cm}|p{4.2cm}|p{4.3cm}|}
+\hline
+\textbf{Test ID} & \textbf{Target Unit} & \textbf{Input/Condition} & \textbf{Expected Result} \\
+\hline
+UT-01 & Event parser & Valid event payload & Event type resolved and routed without error \\
+\hline
+UT-02 & Event parser & Invalid/malformed payload & Rejected safely; diagnostic log written \\
+\hline
+UT-03 & Recording window logic & Trigger at time $t$ & Clip contains buffer before $t$ and capture after $t$ \\
+\hline
+UT-04 & Upload client & Backend reachable & HTTP success and metadata update acknowledged \\
+\hline
+UT-05 & Upload client & Backend timeout/failure & Retry policy executed and failure status logged \\
+\hline
+UT-06 & Metadata mapper & New incident clip data & Correct DB/API payload fields populated \\
+\hline
+\end{longtable}
+
+\section{Pass Criteria}
+\begin{itemize}
+\item All critical unit tests pass for event routing and clip generation.
+\item Failure paths return controlled errors and emit actionable logs.
+\item Metadata fields used by the mobile application are complete and valid.
+\end{itemize}
+
+\section{Risk-Based Notes}
+\begin{itemize}
+\item Timing-sensitive tests can show variance depending on host load.
+\item Camera source interruptions should be tested separately under fault-injection scenarios.
+\item Notification timing validation is verified primarily in integration testing.
+\end{itemize}

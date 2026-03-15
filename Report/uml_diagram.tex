@@ -1,0 +1,63 @@
+\chapter{UML Diagram}
+\section{Use Case Diagram (Textual)}
+\begin{framed}
+Actor: Vehicle Owner
+
+Primary Use Cases:
+1. Receive Incident Alert
+2. View Incident List
+3. Play Incident Video
+
+Actor: System Operator
+
+Supporting Use Cases:
+1. Start/Stop Monitoring
+2. Verify Module Health
+3. Review Logs
+\end{framed}
+
+\section{Class Diagram (Conceptual)}
+\begin{framed}
+Classes and relations:
+
+EventManager
+- validateEvent()
+- dispatchTrigger()
+
+RecordingService
+- startRecording()
+- finalizeClip()
+
+FirebaseManager
+- sendNotification()
+- pushMetadata()
+
+MainGUI
+- renderStatus()
+- showIncidents()
+
+Relations:
+EventManager -> RecordingService
+RecordingService -> FirebaseManager
+MainGUI -> EventManager
+MainGUI -> FirebaseManager
+\end{framed}
+
+\section{Sequence Diagram (Event to Notification)}
+\begin{framed}
+Event Source -> EventManager: trigger(event)
+EventManager -> RecordingService: beginCapture()
+RecordingService -> RecordingService: buildClip(pre, post)
+RecordingService -> FirebaseManager: upload(clip, metadata)
+FirebaseManager -> Mobile App: notifyNewIncident()
+Mobile App -> Backend: fetchIncidentList()
+\end{framed}
+
+\section{Deployment Diagram (Logical Nodes)}
+\begin{itemize}
+\item Node 1: Edge Device (event and recording modules)
+\item Node 2: Backend Server (API, database, media storage)
+\item Node 3: Mobile Client (alerts and playback)
+\end{itemize}
+
+These UML representations provide implementation-aligned design documentation. Formal rendered diagrams can be added later using diagramming tools while preserving the same model entities and interactions.

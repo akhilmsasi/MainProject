@@ -1,0 +1,50 @@
+\chapter{High-Level Design (HLD)}
+\section{Architecture Overview}
+The system follows a modular event-driven architecture. Each subsystem is isolated by responsibility and communicates through defined interfaces to reduce coupling and improve maintainability.
+
+\section{Major Subsystems}
+\begin{itemize}
+\item Event Source Layer: generates events from simulation and vision detection.
+\item Orchestration Layer: validates events and triggers recording workflow.
+\item Recording Layer: builds incident clips from buffered and live frames.
+\item Cloud Layer: uploads clips and stores incident metadata.
+\item Client Layer: displays incidents and receives notifications.
+\end{itemize}
+
+\section{Component Responsibilities}
+\begin{longtable}{|p{3.2cm}|p{3.0cm}|p{7.8cm}|}
+\hline
+\textbf{Component} & \textbf{Primary File/Module} & \textbf{Responsibility} \\
+\hline
+Event Producer & data\_monitor.py / debug\_update.py & Emit controlled trigger events for test and validation flows. \\
+\hline
+Event Controller & EventManager.py & Receive and coordinate trigger handling across downstream modules. \\
+\hline
+Recording Service & recording\_service.py & Manage incident clip creation and recording state transitions. \\
+\hline
+Cloud/Firebase Adapter & firebase\_manager.py & Push notifications and cloud-facing update operations. \\
+\hline
+Operator UI & main\_gui.py & Provide local control and status visibility for operators. \\
+\hline
+Utility Layer & utils.py & Shared helper functions used across modules. \\
+\hline
+\end{longtable}
+
+\section{Data Flow Summary}
+\begin{enumerate}
+\item Event source emits trigger.
+\item Event controller validates trigger and initiates recording action.
+\item Recording service assembles incident clip with contextual buffer.
+\item Cloud adapter uploads clip metadata and notifies clients.
+\item Client views updated incident list and plays selected clips.
+\end{enumerate}
+
+\section{Design Constraints}
+\begin{itemize}
+\item Timely event processing with low overhead on local hardware.
+\item Predictable inter-module interfaces for easier debugging.
+\item Compatibility with local backend deployment stack.
+\end{itemize}
+
+\section{Design Rationale}
+This architecture prioritizes clarity and fault isolation. If one service degrades, logs and boundaries make diagnosis straightforward while preserving the ability to upgrade modules incrementally.

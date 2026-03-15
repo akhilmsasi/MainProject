@@ -1,0 +1,62 @@
+\chapter{Software Requirements Specification (SRS)}
+\section{Introduction}
+This SRS defines functional and non-functional requirements for the Intelligent Incident Surveillance Response System implementation documented in this project.
+
+\section{Functional Requirements}
+\begin{longtable}{|p{1.6cm}|p{5.0cm}|p{7.6cm}|}
+\hline
+\textbf{ID} & \textbf{Requirement} & \textbf{Description} \\
+\hline
+FR-01 & Event Detection & The system shall detect supported trigger events from simulation input and computer-vision input. \\
+\hline
+FR-02 & Event Routing & The event manager shall validate events and dispatch recording commands to the recording subsystem. \\
+\hline
+FR-03 & Pre-event Buffer & The video manager shall preserve at least 30 seconds of pre-event video context in memory. \\
+\hline
+FR-04 & Post-event Capture & The system shall capture at least 30 seconds of post-event footage after a valid trigger. \\
+\hline
+FR-05 & Clip Generation & The system shall generate a playable MP4 incident clip combining pre-event and post-event segments. \\
+\hline
+FR-06 & Metadata Storage & The backend shall store clip metadata including timestamp, event type, and storage path. \\
+\hline
+FR-07 & Cloud Upload & The cloud manager shall upload the generated clip to server storage over HTTP API. \\
+\hline
+FR-08 & Notification & The mobile client shall receive event notifications after successful backend update. \\
+\hline
+FR-09 & Incident Listing & The mobile client shall retrieve and display available incident recordings. \\
+\hline
+FR-10 & Playback & The mobile client shall play selected recordings from backend-hosted media. \\
+\hline
+\end{longtable}
+
+\section{Non-Functional Requirements}
+\begin{itemize}
+\item NFR-01 Performance: End-to-end flow from event to clip availability should complete within operationally acceptable delay for local deployment.
+\item NFR-02 Reliability: Module failures should be logged with enough detail for diagnosis and recovery.
+\item NFR-03 Maintainability: Components shall remain modular and independently testable.
+\item NFR-04 Compatibility: Generated clips shall be playable on common Android media stacks.
+\item NFR-05 Security: Upload and API access shall enforce authentication controls and secure transport where available.
+\item NFR-06 Scalability: Backend schema and API design shall support growth in incident volume.
+\end{itemize}
+
+\section{External Interface Requirements}
+\subsection{Software Interfaces}
+\begin{itemize}
+\item Python modules for event processing and orchestration.
+\item Backend APIs implemented with Apache/PHP and MySQL.
+\item Firebase-based notification pathway for mobile alerting.
+\end{itemize}
+
+\subsection{Communication Interfaces}
+\begin{itemize}
+\item Named pipes for internal module signaling.
+\item HTTP endpoints for file upload and incident metadata operations.
+\end{itemize}
+
+\section{Traceability Summary}
+\begin{itemize}
+\item FR-01/FR-02 map to event modules.
+\item FR-03/FR-04/FR-05 map to recording service and encoding pipeline.
+\item FR-06/FR-07 map to backend upload and database handling.
+\item FR-08/FR-09/FR-10 map to mobile and notification integration.
+\end{itemize}

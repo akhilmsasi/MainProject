@@ -351,7 +351,7 @@ The design of the system was centred around building a modular, event-driven vid
     \centering
     \includegraphics[width=1\linewidth]{System architecture.jpg}
     \caption{System Architecture}
-    \label{fig:placeholder}
+  \label{fig:system-architecture}
 \end{figure}
 \subsection{Event Sources and Triggers}
 There are two primary sources of events in the system:
@@ -385,6 +385,15 @@ Once the file is uploaded, the backend triggers a notification to the Mobile App
 \item  Allow users to play selected videos directly from the server.
 \end{itemize}
 This provides realtime access to surveillance events from a remote device, completing the end to end system flow from detection to user alert.
+
+% Additional project documentation artifacts
+\include{srd}
+\include{srs}
+\include{ut}
+\include{hld}
+\include{uml_diagram}
+\include{user_guide}
+
 \chapter{Module Description}
 The system was divided into five functional modules so that acquisition, decision-making, storage, and user interaction could be developed and tested independently. The modular design also simplified debugging and made it possible to replace or improve individual components without affecting the entire system.
 
@@ -467,7 +476,7 @@ The system is fully implemented, integrated, and tested in a local           env
     \centering
     \includegraphics[width=1\linewidth]{Flow Fiagram.jpg}
   \caption{System Flow Diagram}
-    \label{fig:placeholder}
+    \label{fig:system-flow}
 \end{figure}
 \chapter{Result}
 The integrated prototype was functionally validated in a controlled local environment using simulated trigger events and computer-vision-based person detection. The evaluation focused on confirming the end-to-end behaviour of the system rather than establishing benchmark-level quantitative accuracy. The following outcomes were consistently observed during testing:\\
@@ -485,13 +494,13 @@ These results show that the proposed architecture is suitable for event-driven s
     \centering
     \includegraphics[width=1\linewidth]{person detection.jpg}
     \caption{Person Detection}
-    \label{fig:placeholder}
+  \label{fig:person-detection}
 \end{figure}
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{mobile app.jpg}
     \caption{Mobile App}
-    \label{fig:placeholder}
+  \label{fig:mobile-app}
 \end{figure}
 \par
 Although the functional objectives were achieved, formal quantitative evaluation remains a scope for future work. Metrics such as event-detection precision, false-positive rate, recording latency, cloud upload delay, and notification latency should be measured systematically in a larger test campaign before real-world deployment.

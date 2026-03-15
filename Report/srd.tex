@@ -1,0 +1,49 @@
+\chapter{Software Requirements Definition (SRD)}
+\section{Purpose}
+The Software Requirements Definition (SRD) describes the business context, stakeholder goals, and product boundary for the Intelligent Incident Surveillance Response System. The system is intended to provide event-based surveillance for vehicles by capturing relevant evidence, uploading it to a backend, and making it available through a mobile interface.
+
+\section{Scope}
+The product scope includes:
+\begin{itemize}
+\item Event generation from simulated and vision-based sources.
+\item Event orchestration and recording control.
+\item Buffered video recording with pre-event and post-event context.
+\item Upload of event clips and metadata to cloud/backend services.
+\item User notification and remote playback support through a mobile app.
+\end{itemize}
+
+The following are outside the current scope:
+\begin{itemize}
+\item Fleet-level analytics dashboards.
+\item Automated legal workflow for claims processing.
+\item Multi-vehicle live map tracking in production cloud.
+\end{itemize}
+
+\section{Stakeholders}
+\begin{itemize}
+\item Vehicle Owner: receives alerts and reviews incident evidence.
+\item Fleet Operator: monitors incident clips across assigned vehicles.
+\item Developer/Maintainer: configures trigger logic and backend services.
+\item System Administrator: maintains database, upload APIs, and storage.
+\end{itemize}
+
+\section{Business and User Needs}
+\begin{itemize}
+\item Reduce unnecessary continuous recording and storage overhead.
+\item Preserve contextual evidence before and after incidents.
+\item Improve response time with near-real-time mobile notifications.
+\item Provide simple remote review workflow for uploaded incidents.
+\item Keep architecture modular for easy maintenance and upgrades.
+\end{itemize}
+
+\section{Assumptions and Constraints}
+\begin{itemize}
+\item Camera feeds are available with acceptable quality for trigger processing.
+\item Local network and backend services are reachable during upload.
+\item Platform components run in a UNIX/Linux environment.
+\item Integration uses named pipes and API endpoints already defined in the project.
+\item Security hardening is baseline and can be extended in future revisions.
+\end{itemize}
+
+\section{Success Criteria}
+The SRD is considered satisfied when the system can detect a supported event, generate and store a complete incident clip (with pre/post context), upload it with metadata, and make it discoverable from the mobile interface with user notification.

@@ -1,0 +1,54 @@
+\chapter{User Guide}
+\section{Purpose}
+This guide explains how to run the Intelligent Incident Surveillance Response System in a local development setup and how to verify end-to-end behavior.
+
+\section{Prerequisites}
+\begin{itemize}
+\item Python environment with project dependencies.
+\item Backend services configured (Apache, PHP, MySQL).
+\item Firebase credentials configured for notification features.
+\item Camera/video input source available for event simulation or detection.
+\end{itemize}
+
+\section{Project Files of Interest}
+\begin{itemize}
+\item main\_gui.py: local control interface.
+\item EventManager.py: event coordination logic.
+\item recording\_service.py: clip generation logic.
+\item firebase\_manager.py: cloud/notification integration.
+\item data\_monitor.py, debug\_update.py, debug\_firebase\_test.py: testing and debug helpers.
+\end{itemize}
+
+\section{Startup Procedure}
+\begin{enumerate}
+\item Start backend services and verify database connectivity.
+\item Confirm configuration files and credentials are present.
+\item Launch monitoring and orchestration modules.
+\item Launch the local GUI if interactive operation is required.
+\item Trigger a test event and verify clip creation and upload.
+\end{enumerate}
+
+\section{Operational Workflow}
+\begin{enumerate}
+\item System waits in monitoring state.
+\item Trigger event occurs (simulated or vision-based).
+\item Recording module builds incident clip with context.
+\item Clip metadata is stored and notification is sent.
+\item User opens client app and reviews incident list/playback.
+\end{enumerate}
+
+\section{Troubleshooting}
+\begin{itemize}
+\item No notification received: check Firebase key path and backend notification logs.
+\item Clip missing: verify recording service status and available disk space.
+\item Upload failure: verify API endpoint reachability and backend permissions.
+\item Empty incident list: confirm metadata insertion in database tables.
+\end{itemize}
+
+\section{Best Practices}
+\begin{itemize}
+\item Keep system clock synchronized across modules.
+\item Use controlled event simulations before live camera testing.
+\item Archive old clips periodically to maintain storage performance.
+\item Review logs after each test cycle to catch intermittent issues.
+\end{itemize}
