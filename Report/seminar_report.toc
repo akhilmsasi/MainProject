@@ -1,0 +1,97 @@
+\contentsline {chapter}{Abstract}{i}{}%
+\contentsline {chapter}{Acknowledgement}{ii}{}%
+\contentsline {chapter}{List of Figures}{vii}{}%
+\contentsline {chapter}{Abbreviations}{viii}{}%
+\contentsline {chapter}{\numberline {1}Introduction}{1}{}%
+\contentsline {section}{\numberline {1.1}Background to the Project}{1}{}%
+\contentsline {section}{\numberline {1.2}Project Objectives}{2}{}%
+\contentsline {chapter}{\numberline {2}Literature Review}{4}{}%
+\contentsline {section}{\numberline {2.1}GSM-Based Alert System }{4}{}%
+\contentsline {section}{\numberline {2.2}Continuous Dashcam Recording}{5}{}%
+\contentsline {section}{\numberline {2.3}Live Surveillance Systems}{6}{}%
+\contentsline {section}{\numberline {2.4}Proprietary Surveillance}{8}{}%
+\contentsline {section}{\numberline {2.5}Consens : Collaborative and opportunistic sensing of road events by vehicles cameras}{9}{}%
+\contentsline {section}{\numberline {2.6}Cloud-assisted event detection in vehicular networks}{10}{}%
+\contentsline {section}{\numberline {2.7}Real-time data streaming in connected vehicles. Journal of Computer Networks and Communications}{11}{}%
+\contentsline {chapter}{\numberline {3}Problem Definition}{12}{}%
+\contentsline {section}{\numberline {3.1}Problem Statement}{12}{}%
+\contentsline {section}{\numberline {3.2}Problem Description}{13}{}%
+\contentsline {chapter}{\numberline {4}Methodology}{15}{}%
+\contentsline {section}{\numberline {4.1}Scrum Framework Overview}{15}{}%
+\contentsline {subsection}{\numberline {4.1.1}Scrum Team Roles}{15}{}%
+\contentsline {subsection}{\numberline {4.1.2}Scrum Artifacts}{16}{}%
+\contentsline {section}{\numberline {4.2}Team Composition and Responsibilities}{16}{}%
+\contentsline {section}{\numberline {4.3}Sprint Planning and Execution}{17}{}%
+\contentsline {subsection}{\numberline {4.3.1}Sprint 1 (03 Nov -- 21 Nov 2025): System Integration \& Database Architecture}{17}{}%
+\contentsline {subsection}{\numberline {4.3.2}Sprint 2 (01 Dec -- 19 Dec 2025): Network Streaming \& Event Logic Refinement}{17}{}%
+\contentsline {subsection}{\numberline {4.3.3}Sprint 3 (05 Jan -- 23 Jan 2026): Integration \& Testing}{18}{}%
+\contentsline {subsection}{\numberline {4.3.4}Sprint 4 (02 Feb -- 20 Feb 2026): Collaborative Logic \& Performance Testing}{18}{}%
+\contentsline {subsection}{\numberline {4.3.5}Sprint 5 (02 Mar -- 20 Mar 2026): Testing, Documentation \& Final Review}{18}{}%
+\contentsline {section}{\numberline {4.4}Sprint Summary}{19}{}%
+\contentsline {section}{\numberline {4.5}Advantages of Agile/Scrum for This Project}{19}{}%
+\contentsline {chapter}{\numberline {5}Requirements, Analysis and Design}{20}{}%
+\contentsline {section}{\numberline {5.1}Requirements Gathering}{20}{}%
+\contentsline {section}{\numberline {5.2}System Design}{21}{}%
+\contentsline {subsection}{\numberline {5.2.1}Event Sources and Triggers}{21}{}%
+\contentsline {subsection}{\numberline {5.2.2}UNIX Platform and Modular Core}{22}{}%
+\contentsline {subsection}{\numberline {5.2.3}Cloud Backend}{22}{}%
+\contentsline {chapter}{\numberline {6}High-Level Design (HLD)}{23}{}%
+\contentsline {section}{\numberline {6.1}Architecture Overview}{23}{}%
+\contentsline {section}{\numberline {6.2}Major Subsystems}{23}{}%
+\contentsline {section}{\numberline {6.3}Component Responsibilities}{23}{}%
+\contentsline {section}{\numberline {6.4}Data Flow Summary}{24}{}%
+\contentsline {section}{\numberline {6.5}Design Constraints}{24}{}%
+\contentsline {section}{\numberline {6.6}Design Rationale}{24}{}%
+\contentsline {chapter}{\numberline {7}UML Diagram}{25}{}%
+\contentsline {section}{\numberline {7.1}Use Case Diagram (Textual)}{25}{}%
+\contentsline {section}{\numberline {7.2}Class Diagram (Conceptual)}{26}{}%
+\contentsline {section}{\numberline {7.3}Sequence Diagram (Event to Notification)}{27}{}%
+\contentsline {section}{\numberline {7.4}Deployment Diagram (Logical Nodes)}{28}{}%
+\contentsline {chapter}{\numberline {8}User Guide}{29}{}%
+\contentsline {section}{\numberline {8.1}Purpose}{29}{}%
+\contentsline {section}{\numberline {8.2}Prerequisites}{29}{}%
+\contentsline {section}{\numberline {8.3}Project Files of Interest}{29}{}%
+\contentsline {section}{\numberline {8.4}Startup Procedure}{30}{}%
+\contentsline {section}{\numberline {8.5}Operational Workflow}{30}{}%
+\contentsline {section}{\numberline {8.6}Troubleshooting}{30}{}%
+\contentsline {section}{\numberline {8.7}Best Practices}{30}{}%
+\contentsline {chapter}{\numberline {9}Module Description}{31}{}%
+\contentsline {section}{\numberline {9.1}Event App}{31}{}%
+\contentsline {section}{\numberline {9.2}Event Manager}{31}{}%
+\contentsline {section}{\numberline {9.3}Video Manager}{32}{}%
+\contentsline {section}{\numberline {9.4}Cloud Manager}{32}{}%
+\contentsline {section}{\numberline {9.5}Mobile Application}{32}{}%
+\contentsline {chapter}{\numberline {10}Implementation}{33}{}%
+\contentsline {section}{\numberline {10.1}Event Detection (event app)}{33}{}%
+\contentsline {section}{\numberline {10.2}Event Manager (event manager)}{33}{}%
+\contentsline {section}{\numberline {10.3}Video Manager (video manager)}{34}{}%
+\contentsline {section}{\numberline {10.4}Cloud Manager (cloud manager)}{34}{}%
+\contentsline {section}{\numberline {10.5}Mobile App (Android)}{34}{}%
+\contentsline {section}{\numberline {10.6}Development Approach}{34}{}%
+\contentsline {section}{\numberline {10.7}Deployment}{35}{}%
+\contentsline {chapter}{\numberline {11}Result}{36}{}%
+\contentsline {chapter}{\numberline {12}Conclusion}{38}{}%
+\contentsline {chapter}{\numberline {13}References}{39}{}%
+\contentsline {chapter}{References}{40}{}%
+\contentsline {chapter}{\numberline {A}Annex: Software Requirements Definition (SRD)}{41}{}%
+\contentsline {section}{\numberline {A.1}Purpose}{41}{}%
+\contentsline {section}{\numberline {A.2}Scope}{41}{}%
+\contentsline {section}{\numberline {A.3}Stakeholders}{42}{}%
+\contentsline {section}{\numberline {A.4}Business and User Needs}{42}{}%
+\contentsline {section}{\numberline {A.5}Assumptions and Constraints}{42}{}%
+\contentsline {section}{\numberline {A.6}Success Criteria}{42}{}%
+\contentsline {chapter}{\numberline {B}Annex: Software Requirements Specification (SRS)}{43}{}%
+\contentsline {section}{\numberline {B.1}Introduction}{43}{}%
+\contentsline {section}{\numberline {B.2}Functional Requirements}{43}{}%
+\contentsline {section}{\numberline {B.3}Non-Functional Requirements}{44}{}%
+\contentsline {section}{\numberline {B.4}External Interface Requirements}{44}{}%
+\contentsline {subsection}{\numberline {B.4.1}Software Interfaces}{44}{}%
+\contentsline {subsection}{\numberline {B.4.2}Communication Interfaces}{45}{}%
+\contentsline {section}{\numberline {B.5}Traceability Summary}{45}{}%
+\contentsline {chapter}{\numberline {C}Annex: Unit Testing (UT)}{46}{}%
+\contentsline {section}{\numberline {C.1}Objective}{46}{}%
+\contentsline {section}{\numberline {C.2}Unit Test Scope}{46}{}%
+\contentsline {section}{\numberline {C.3}Test Environment}{46}{}%
+\contentsline {section}{\numberline {C.4}Representative Unit Test Cases}{47}{}%
+\contentsline {section}{\numberline {C.5}Pass Criteria}{47}{}%
+\contentsline {section}{\numberline {C.6}Risk-Based Notes}{47}{}%
