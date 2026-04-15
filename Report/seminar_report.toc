@@ -1,7 +1,7 @@
 \contentsline {chapter}{Abstract}{i}{}%
 \contentsline {chapter}{Acknowledgement}{ii}{}%
-\contentsline {chapter}{List of Figures}{iv}{}%
-\contentsline {chapter}{Abbreviations}{v}{}%
+\contentsline {chapter}{List of Figures}{vii}{}%
+\contentsline {chapter}{Abbreviations}{viii}{}%
 \contentsline {chapter}{\numberline {1}Introduction}{1}{}%
 \contentsline {section}{\numberline {1.1}Background to the Project}{1}{}%
 \contentsline {section}{\numberline {1.2}Project Objectives}{2}{}%
@@ -10,7 +10,7 @@
 \contentsline {section}{\numberline {2.2}Continuous Dashcam Recording}{5}{}%
 \contentsline {section}{\numberline {2.3}Live Surveillance Systems}{6}{}%
 \contentsline {section}{\numberline {2.4}Proprietary Surveillance}{8}{}%
-\contentsline {section}{\numberline {2.5}Consens : Collaborative and opportunistic sensing of road events by vehicles cameras}{9}{}%
+\contentsline {section}{\numberline {2.5}COSENS: Collaborative and opportunistic sensing of road events by vehicles' cameras}{9}{}%
 \contentsline {section}{\numberline {2.6}Cloud-assisted event detection in vehicular networks}{10}{}%
 \contentsline {section}{\numberline {2.7}Real-time data streaming in connected vehicles. Journal of Computer Networks and Communications}{11}{}%
 \contentsline {chapter}{\numberline {3}Problem Definition}{12}{}%
@@ -46,52 +46,51 @@
 \contentsline {section}{\numberline {7.1}Use Case Diagram (Textual)}{25}{}%
 \contentsline {section}{\numberline {7.2}Class Diagram (Conceptual)}{26}{}%
 \contentsline {section}{\numberline {7.3}Sequence Diagram (Event to Notification)}{27}{}%
-\contentsline {section}{\numberline {7.4}Deployment Diagram (Logical Nodes)}{28}{}%
-\contentsline {chapter}{\numberline {8}User Guide}{29}{}%
-\contentsline {section}{\numberline {8.1}Purpose}{29}{}%
-\contentsline {section}{\numberline {8.2}Prerequisites}{29}{}%
-\contentsline {section}{\numberline {8.3}Project Files of Interest}{29}{}%
-\contentsline {section}{\numberline {8.4}Startup Procedure}{30}{}%
-\contentsline {section}{\numberline {8.5}Operational Workflow}{30}{}%
-\contentsline {section}{\numberline {8.6}Troubleshooting}{30}{}%
-\contentsline {section}{\numberline {8.7}Best Practices}{30}{}%
-\contentsline {chapter}{\numberline {9}Module Description}{31}{}%
-\contentsline {section}{\numberline {9.1}Event App}{31}{}%
-\contentsline {section}{\numberline {9.2}Event Manager}{31}{}%
-\contentsline {section}{\numberline {9.3}Video Manager}{32}{}%
-\contentsline {section}{\numberline {9.4}Cloud Manager}{32}{}%
-\contentsline {section}{\numberline {9.5}Mobile Application}{32}{}%
-\contentsline {chapter}{\numberline {10}Implementation}{33}{}%
-\contentsline {section}{\numberline {10.1}Event Detection (event app)}{33}{}%
-\contentsline {section}{\numberline {10.2}Event Manager (event manager)}{33}{}%
-\contentsline {section}{\numberline {10.3}Video Manager (video manager)}{34}{}%
-\contentsline {section}{\numberline {10.4}Cloud Manager (cloud manager)}{34}{}%
-\contentsline {section}{\numberline {10.5}Mobile App (Android)}{34}{}%
-\contentsline {section}{\numberline {10.6}Development Approach}{34}{}%
-\contentsline {section}{\numberline {10.7}Deployment}{35}{}%
-\contentsline {chapter}{\numberline {11}Result}{36}{}%
-\contentsline {chapter}{\numberline {12}Conclusion}{38}{}%
-\contentsline {chapter}{\numberline {13}References}{39}{}%
-\contentsline {chapter}{References}{40}{}%
-\contentsline {chapter}{\numberline {A}Annex: Software Requirements Definition (SRD)}{41}{}%
-\contentsline {section}{\numberline {A.1}Purpose}{41}{}%
-\contentsline {section}{\numberline {A.2}Scope}{41}{}%
-\contentsline {section}{\numberline {A.3}Stakeholders}{42}{}%
-\contentsline {section}{\numberline {A.4}Business and User Needs}{42}{}%
-\contentsline {section}{\numberline {A.5}Assumptions and Constraints}{42}{}%
-\contentsline {section}{\numberline {A.6}Success Criteria}{42}{}%
-\contentsline {chapter}{\numberline {B}Annex: Software Requirements Specification (SRS)}{43}{}%
-\contentsline {section}{\numberline {B.1}Introduction}{43}{}%
-\contentsline {section}{\numberline {B.2}Functional Requirements}{43}{}%
-\contentsline {section}{\numberline {B.3}Non-Functional Requirements}{44}{}%
-\contentsline {section}{\numberline {B.4}External Interface Requirements}{44}{}%
-\contentsline {subsection}{\numberline {B.4.1}Software Interfaces}{44}{}%
-\contentsline {subsection}{\numberline {B.4.2}Communication Interfaces}{45}{}%
-\contentsline {section}{\numberline {B.5}Traceability Summary}{45}{}%
-\contentsline {chapter}{\numberline {C}Annex: Unit Testing (UT)}{46}{}%
-\contentsline {section}{\numberline {C.1}Objective}{46}{}%
-\contentsline {section}{\numberline {C.2}Unit Test Scope}{46}{}%
-\contentsline {section}{\numberline {C.3}Test Environment}{46}{}%
-\contentsline {section}{\numberline {C.4}Representative Unit Test Cases}{47}{}%
-\contentsline {section}{\numberline {C.5}Pass Criteria}{47}{}%
-\contentsline {section}{\numberline {C.6}Risk-Based Notes}{47}{}%
+\contentsline {section}{\numberline {7.4}Deployment Diagram (Logical Nodes)}{27}{}%
+\contentsline {chapter}{\numberline {8}User Guide}{28}{}%
+\contentsline {section}{\numberline {8.1}Purpose}{28}{}%
+\contentsline {section}{\numberline {8.2}Prerequisites}{28}{}%
+\contentsline {section}{\numberline {8.3}Project Files of Interest}{28}{}%
+\contentsline {section}{\numberline {8.4}Startup Procedure}{29}{}%
+\contentsline {section}{\numberline {8.5}Operational Workflow}{29}{}%
+\contentsline {section}{\numberline {8.6}Troubleshooting}{29}{}%
+\contentsline {section}{\numberline {8.7}Best Practices}{29}{}%
+\contentsline {chapter}{\numberline {9}Module Description}{30}{}%
+\contentsline {section}{\numberline {9.1}Event App}{30}{}%
+\contentsline {section}{\numberline {9.2}Event Manager}{30}{}%
+\contentsline {section}{\numberline {9.3}Video Manager}{31}{}%
+\contentsline {section}{\numberline {9.4}Cloud Manager}{31}{}%
+\contentsline {section}{\numberline {9.5}Mobile Application}{31}{}%
+\contentsline {chapter}{\numberline {10}Implementation}{32}{}%
+\contentsline {section}{\numberline {10.1}Event Detection (event app)}{32}{}%
+\contentsline {section}{\numberline {10.2}Event Manager (event manager)}{32}{}%
+\contentsline {section}{\numberline {10.3}Video Manager (video manager)}{33}{}%
+\contentsline {section}{\numberline {10.4}Cloud Manager (cloud manager)}{33}{}%
+\contentsline {section}{\numberline {10.5}Mobile App (Android)}{33}{}%
+\contentsline {section}{\numberline {10.6}Development Approach}{33}{}%
+\contentsline {section}{\numberline {10.7}Deployment}{34}{}%
+\contentsline {chapter}{\numberline {11}Result}{35}{}%
+\contentsline {chapter}{\numberline {12}Conclusion}{37}{}%
+\contentsline {chapter}{References}{38}{}%
+\contentsline {chapter}{\numberline {A}Annex: Software Requirements Definition (SRD)}{39}{}%
+\contentsline {section}{\numberline {A.1}Purpose}{39}{}%
+\contentsline {section}{\numberline {A.2}Scope}{39}{}%
+\contentsline {section}{\numberline {A.3}Stakeholders}{40}{}%
+\contentsline {section}{\numberline {A.4}Business and User Needs}{40}{}%
+\contentsline {section}{\numberline {A.5}Assumptions and Constraints}{40}{}%
+\contentsline {section}{\numberline {A.6}Success Criteria}{40}{}%
+\contentsline {chapter}{\numberline {B}Annex: Software Requirements Specification (SRS)}{41}{}%
+\contentsline {section}{\numberline {B.1}Introduction}{41}{}%
+\contentsline {section}{\numberline {B.2}Functional Requirements}{41}{}%
+\contentsline {section}{\numberline {B.3}Non-Functional Requirements}{42}{}%
+\contentsline {section}{\numberline {B.4}External Interface Requirements}{42}{}%
+\contentsline {subsection}{\numberline {B.4.1}Software Interfaces}{42}{}%
+\contentsline {subsection}{\numberline {B.4.2}Communication Interfaces}{43}{}%
+\contentsline {section}{\numberline {B.5}Traceability Summary}{43}{}%
+\contentsline {chapter}{\numberline {C}Annex: Unit Testing (UT)}{44}{}%
+\contentsline {section}{\numberline {C.1}Objective}{44}{}%
+\contentsline {section}{\numberline {C.2}Unit Test Scope}{44}{}%
+\contentsline {section}{\numberline {C.3}Test Environment}{44}{}%
+\contentsline {section}{\numberline {C.4}Representative Unit Test Cases}{45}{}%
+\contentsline {section}{\numberline {C.5}Pass Criteria}{45}{}%
+\contentsline {section}{\numberline {C.6}Risk-Based Notes}{45}{}%

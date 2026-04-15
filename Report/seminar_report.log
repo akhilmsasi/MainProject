@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.15)  15 APR 2026 12:51
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.15)  15 APR 2026 14:47
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -442,13 +442,12 @@ Package tocbibind Note: Using chapter style headings, unless overridden.
 LaTeX Font Info:    Trying to load font information for OT1+txr on input line 71.
  (c:/texlive/2026/texmf-dist/tex/latex/txfonts/ot1txr.fd
 File: ot1txr.fd 2000/12/15 v3.1
-)
-No file seminar_report.aux.
+) (./seminar_report.aux (./coverpage.aux) (./certificate2.aux) (./declaration.aux) (./abstract.aux) (./acknowledgement.aux) (./hld.aux) (./uml_diagram.aux) (./user_guide.aux) (./srd.aux) (./srs.aux) (./ut.aux))
 \openout1 = `seminar_report.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/txmi/m/it on input line 71.
 LaTeX Font Info:    Trying to load font information for OML+txmi on input line 71.
-(c:/texlive/2026/texmf-dist/tex/latex/txfonts/omltxmi.fd
+ (c:/texlive/2026/texmf-dist/tex/latex/txfonts/omltxmi.fd
 File: omltxmi.fd 2000/12/15 v3.1
 )
 LaTeX Font Info:    ... okay on input line 71.
@@ -651,133 +650,49 @@ Overfull \hbox (47.38089pt too wide) in paragraph at lines 29--35
 ]
 LaTeX Font Info:    Font shape `OT1/txr/b/n' in size <24.88> not available
 (Font)              Font shape `OT1/txr/bx/n' tried instead on input line 146.
+ (./seminar_report.toc [3
 
-No file seminar_report.toc.
+
+
+] [4] [5])
 \tf@toc=\write3
 \openout3 = `seminar_report.toc'.
 
-[3
-
-
-
-]
-No file seminar_report.lof.
+ [6] (./seminar_report.lof)
 \tf@lof=\write4
 \openout4 = `seminar_report.lof'.
 
-[4
+ [7
 
-] (./abbrevation.tex) [5]
+] (./abbrevation.tex) [8]
 Chapter 1.
 LaTeX Font Info:    Font shape `OT1/txr/b/n' in size <20.74> not available
 (Font)              Font shape `OT1/txr/bx/n' tried instead on input line 161.
-LaTeX Font Info:    Trying to load font information for TS1+txr on input line 165.
-(c:/texlive/2026/texmf-dist/tex/latex/txfonts/ts1txr.fd
-File: ts1txr.fd 2000/12/15 v3.1
-) [1
+[1
 
 
 ]
-
-c:/Users/justi/Project/MainProject/Report/seminar_report.tex:167: LaTeX Error: Unicode character  (U+009D)
-               not set up for use with LaTeX.
-
-See the LaTeX manual or LaTeX Companion for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.167 ...pplication (â€œSecurity Viewerâ€
-                                                  ).Although the project was...
-You may provide a definition with
-\DeclareUnicodeCharacter 
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 169--188
 
  []
 
 [2] [3]
 Chapter 2.
-
-LaTeX Warning: Citation `patel2024' on page 4 undefined on input line 191.
-
 [4
 
-]
-
-LaTeX Warning: Citation `rocky2024' on page 5 undefined on input line 195.
-
-[5]
-
-LaTeX Warning: Citation `rehman2018' on page 6 undefined on input line 205.
-
-[6]
-
-c:/Users/justi/Project/MainProject/Report/seminar_report.tex:207: LaTeX Error: Unicode character  (U+009D)
-               not set up for use with LaTeX.
-
-See the LaTeX manual or LaTeX Companion for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.207 ...onking. The â€œSecurity Viewerâ€
-                                                   app developed in the curr...
-You may provide a definition with
-\DeclareUnicodeCharacter 
-
-
+] [5] [6]
 Underfull \hbox (badness 10000) in paragraph at lines 208--209
 
  []
 
-[7]
-
-LaTeX Warning: Citation `tesla2023' on page 8 undefined on input line 211.
-
-
-c:/Users/justi/Project/MainProject/Report/seminar_report.tex:212: LaTeX Error: Unicode character  (U+009D)
-               not set up for use with LaTeX.
-
-See the LaTeX manual or LaTeX Companion for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.212 ...�€”displaying â€œRecordingâ€
-                                                   messages on screensâ€�...
-You may provide a definition with
-\DeclareUnicodeCharacter 
-
-
-c:/Users/justi/Project/MainProject/Report/seminar_report.tex:215: LaTeX Error: Unicode character  (U+009D)
-               not set up for use with LaTeX.
-
-See the LaTeX manual or LaTeX Companion for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.215 ...lity in the â€œSecurity Viewerâ€
-                                                   app, though the latter ex...
-You may provide a definition with
-\DeclareUnicodeCharacter 
-
-[8
+[7] [8
 
 ]
 Underfull \hbox (badness 10000) in paragraph at lines 216--217
 
  []
 
-
-LaTeX Warning: Citation `cosens2023' on page 9 undefined on input line 218.
-
-[9]
-
-LaTeX Warning: Citation `park2022' on page 10 undefined on input line 221.
-
-
-LaTeX Warning: Citation `ahmad2022' on page 10 undefined on input line 223.
-
-[10] [11]
+[9] [10] [11]
 Chapter 3.
 
 Underfull \hbox (badness 10000) in paragraph at lines 229--232
@@ -792,7 +707,11 @@ Underfull \hbox (badness 10000) in paragraph at lines 244--246
 
  []
 
-[13] [14]
+[13]
+LaTeX Font Info:    Trying to load font information for TS1+txr on input line 248.
+ (c:/texlive/2026/texmf-dist/tex/latex/txfonts/ts1txr.fd
+File: ts1txr.fd 2000/12/15 v3.1
+) [14]
 Chapter 4.
 [15
 
@@ -866,10 +785,10 @@ Chapter 5.
 [20
 
 ]
-<System architecture.jpg, id=101, 469.755pt x 247.67531pt>
+<System architecture.jpg, id=112, 469.755pt x 247.67531pt>
 File: System architecture.jpg Graphic file (type jpg)
 <use System architecture.jpg>
-Package pdftex.def Info: System architecture.jpg  used on input line 408.
+Package pdftex.def Info: System architecture.jpg  used on input line 407.
 (pdftex.def)             Requested size: 412.56497pt x 217.52032pt.
  [21 <./System architecture.jpg>] [22]
 \openout2 = `hld.aux'.
@@ -920,143 +839,100 @@ ignored: Infinite glue shrinkage found in box being split [23
 
  (./uml_diagram.tex
 Chapter 7.
-
-LaTeX Warning: File `Report//figures/UseCase.png' not found on input line 6.
-
-
-./uml_diagram.tex:6: Package pdftex.def Error: File `Report//figures/UseCase.png' not found: using draft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.6 ...0.5\linewidth]{Report//figures/UseCase.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-LaTeX Font Info:    Trying to load font information for OT1+txtt on input line 6.
-(c:/texlive/2026/texmf-dist/tex/latex/txfonts/ot1txtt.fd
-File: ot1txtt.fd 2000/12/15 v3.1
-) [25
+<figures/UseCase.png, id=125, 575.90157pt x 1084.05pt>
+File: figures/UseCase.png Graphic file (type png)
+<use figures/UseCase.png>
+Package pdftex.def Info: figures/UseCase.png  used on input line 6.
+(pdftex.def)             Requested size: 206.28249pt x 388.28929pt.
+[25
 
 
 
 
-]
-
-LaTeX Warning: File `Report//figures/ClassDiagram.png' not found on input line 18.
-
-
-./uml_diagram.tex:18: Package pdftex.def Error: File `Report//figures/ClassDiagram.png' not found: using draft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.18 ...newidth]{Report//figures/ClassDiagram.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[26]
-
-LaTeX Warning: File `Report//figures/sequenceDiagram.png' not found on input line 28.
-
-
-./uml_diagram.tex:28: Package pdftex.def Error: File `Report//figures/sequenceDiagram.png' not found: using draft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.28 ...idth]{Report//figures/sequenceDiagram.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-
-LaTeX Warning: File `Report//figures/DeploymentDiagram.png' not found on input line 36.
-
-
-./uml_diagram.tex:36: Package pdftex.def Error: File `Report//figures/DeploymentDiagram.png' not found: using draft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.36 ...th]{Report//figures/DeploymentDiagram.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-) [27] [28]
+ <./figures/UseCase.png>]
+<figures/ClassDiagram.png, id=131, 336.88359pt x 523.9575pt>
+File: figures/ClassDiagram.png Graphic file (type png)
+<use figures/ClassDiagram.png>
+Package pdftex.def Info: figures/ClassDiagram.png  used on input line 18.
+(pdftex.def)             Requested size: 330.05322pt x 513.33894pt.
+ [26 <./figures/ClassDiagram.png>]
+<figures/sequenceDiagram.png, id=137, 1234.6125pt x 548.80031pt>
+File: figures/sequenceDiagram.png Graphic file (type png)
+<use figures/sequenceDiagram.png>
+Package pdftex.def Info: figures/sequenceDiagram.png  used on input line 28.
+(pdftex.def)             Requested size: 412.56497pt x 183.39076pt.
+<figures/DeploymentDiagram.png, id=138, 754.31813pt x 791.95876pt>
+File: figures/DeploymentDiagram.png Graphic file (type png)
+<use figures/DeploymentDiagram.png>
+Package pdftex.def Info: figures/DeploymentDiagram.png  used on input line 36.
+(pdftex.def)             Requested size: 330.05322pt x 346.51736pt.
+) [27 <./figures/sequenceDiagram.png> <./figures/DeploymentDiagram.png>]
 \openout2 = `user_guide.aux'.
 
  (./user_guide.tex
 Chapter 8.
-[29
+[28
 
 
 
 
-]) [30]
+]) [29]
 Chapter 9.
-[31
+[30
 
 
 
-] [32]
+] [31]
 Chapter 10.
-[33
+[32
 
-] [34]
-<Flow Diagram.jpg, id=147, 497.60907pt x 324.46219pt>
+] [33]
+<Flow Diagram.jpg, id=163, 497.60907pt x 324.46219pt>
 File: Flow Diagram.jpg Graphic file (type jpg)
 <use Flow Diagram.jpg>
-Package pdftex.def Info: Flow Diagram.jpg  used on input line 530.
+Package pdftex.def Info: Flow Diagram.jpg  used on input line 529.
 (pdftex.def)             Requested size: 412.56497pt x 269.01639pt.
- [35 <./Flow Diagram.jpg>]
+ [34 <./Flow Diagram.jpg>]
 Chapter 11.
 
-Underfull \hbox (badness 10000) in paragraph at lines 535--536
+Underfull \hbox (badness 10000) in paragraph at lines 534--535
 
  []
 
-<person detection.jpg, id=152, 716.6775pt x 405.01312pt>
+<person detection.jpg, id=167, 716.6775pt x 405.01312pt>
 File: person detection.jpg Graphic file (type jpg)
 <use person detection.jpg>
-Package pdftex.def Info: person detection.jpg  used on input line 548.
+Package pdftex.def Info: person detection.jpg  used on input line 547.
 (pdftex.def)             Requested size: 412.56497pt x 233.15265pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<mobile app.jpg, id=153, 773.13844pt x 331.99031pt>
+<mobile app.jpg, id=168, 773.13844pt x 331.99031pt>
 File: mobile app.jpg Graphic file (type jpg)
 <use mobile app.jpg>
-Package pdftex.def Info: mobile app.jpg  used on input line 554.
+Package pdftex.def Info: mobile app.jpg  used on input line 553.
 (pdftex.def)             Requested size: 412.56497pt x 177.15967pt.
-[36
+[35
 
-] [37 <./person detection.jpg> <./mobile app.jpg>]
+] [36 <./person detection.jpg> <./mobile app.jpg>]
 Chapter 12.
-[38
+[37
 
 ]
-Chapter 13.
-[39
-
-] [40
+LaTeX Font Info:    Trying to load font information for OT1+txtt on input line 580.
+ (c:/texlive/2026/texmf-dist/tex/latex/txfonts/ot1txtt.fd
+File: ot1txtt.fd 2000/12/15 v3.1
+) [38
 
 ]
 \openout2 = `srd.aux'.
 
  (./srd.tex
 Appendix A.
-[41
+[39
 
 
-]) [42]
+]) [40]
 \openout2 = `srs.aux'.
 
  (./srs.tex
@@ -1082,12 +958,12 @@ Overfull \hbox (27.4645pt too wide) in alignment at lines 6--30
  []
 
 
-ignored: Infinite glue shrinkage found in box being split [43
+ignored: Infinite glue shrinkage found in box being split [41
 
 
 
 
-] [44]) [45]
+] [42]) [43]
 \openout2 = `ut.aux'.
 
  (./ut.tex
@@ -1107,37 +983,30 @@ Overfull \hbox (39.46404pt too wide) in alignment at lines 22--38
  [] [] [] [] 
  []
 
-[46
+[44
 
 
 
 
-]) [47] (./seminar_report.aux (./coverpage.aux) (./certificate2.aux) (./declaration.aux) (./abstract.aux) (./acknowledgement.aux) (./hld.aux) (./uml_diagram.aux) (./user_guide.aux) (./srd.aux) (./srs.aux) (./ut.aux))
+]) [45] (./seminar_report.aux (./coverpage.aux) (./certificate2.aux) (./declaration.aux) (./abstract.aux) (./acknowledgement.aux) (./hld.aux) (./uml_diagram.aux) (./user_guide.aux) (./srd.aux) (./srs.aux) (./ut.aux))
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
  ) 
 Here is how much of TeX's memory you used:
- 10293 strings out of 467525
- 180254 string characters out of 5423209
+ 10237 strings out of 467525
+ 176540 string characters out of 5423209
  741920 words of memory out of 5000000
- 38899 multiletter control sequences out of 15000+600000
+ 38815 multiletter control sequences out of 15000+600000
  664923 words of font info for 116 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 110i,12n,107p,2366b,450s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtcxr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtxb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtxr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/txtt.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/palatino/uplbi8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmb8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmri8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/zapfchan/uzcmi8a.pfb>
-Output written on seminar_report.pdf (55 pages, 435129 bytes).
+ 110i,13n,107p,2343b,450s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtcxr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtxb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtxr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/txsy.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/txtt.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/palatino/uplbi8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmb8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmri8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/zapfchan/uzcmi8a.pfb>
+Output written on seminar_report.pdf (56 pages, 673493 bytes).
 PDF statistics:
- 239 PDF objects out of 1000 (max. 8388607)
- 155 compressed objects within 2 object streams
+ 256 PDF objects out of 1000 (max. 8388607)
+ 161 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 26 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 46 words of extra memory for PDF output out of 10000 (max. 10000000)
 
