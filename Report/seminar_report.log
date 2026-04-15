@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.15)  8 APR 2026 10:41
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.15)  15 APR 2026 12:51
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -442,12 +442,13 @@ Package tocbibind Note: Using chapter style headings, unless overridden.
 LaTeX Font Info:    Trying to load font information for OT1+txr on input line 71.
  (c:/texlive/2026/texmf-dist/tex/latex/txfonts/ot1txr.fd
 File: ot1txr.fd 2000/12/15 v3.1
-) (./seminar_report.aux (./coverpage.aux) (./certificate2.aux) (./declaration.aux) (./abstract.aux) (./acknowledgement.aux) (./hld.aux) (./uml_diagram.aux) (./user_guide.aux) (./srd.aux) (./srs.aux) (./ut.aux))
+)
+No file seminar_report.aux.
 \openout1 = `seminar_report.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/txmi/m/it on input line 71.
 LaTeX Font Info:    Trying to load font information for OML+txmi on input line 71.
- (c:/texlive/2026/texmf-dist/tex/latex/txfonts/omltxmi.fd
+(c:/texlive/2026/texmf-dist/tex/latex/txfonts/omltxmi.fd
 File: omltxmi.fd 2000/12/15 v3.1
 )
 LaTeX Font Info:    ... okay on input line 71.
@@ -650,21 +651,23 @@ Overfull \hbox (47.38089pt too wide) in paragraph at lines 29--35
 ]
 LaTeX Font Info:    Font shape `OT1/txr/b/n' in size <24.88> not available
 (Font)              Font shape `OT1/txr/bx/n' tried instead on input line 146.
- (./seminar_report.toc [3
 
-
-
-] [4] [5])
+No file seminar_report.toc.
 \tf@toc=\write3
 \openout3 = `seminar_report.toc'.
 
- [6] (./seminar_report.lof)
+[3
+
+
+
+]
+No file seminar_report.lof.
 \tf@lof=\write4
 \openout4 = `seminar_report.lof'.
 
- [7
+[4
 
-] (./abbrevation.tex) [8]
+] (./abbrevation.tex) [5]
 Chapter 1.
 LaTeX Font Info:    Font shape `OT1/txr/b/n' in size <20.74> not available
 (Font)              Font shape `OT1/txr/bx/n' tried instead on input line 161.
@@ -695,9 +698,20 @@ Underfull \hbox (badness 10000) in paragraph at lines 169--188
 
 [2] [3]
 Chapter 2.
+
+LaTeX Warning: Citation `patel2024' on page 4 undefined on input line 191.
+
 [4
 
-] [5] [6]
+]
+
+LaTeX Warning: Citation `rocky2024' on page 5 undefined on input line 195.
+
+[5]
+
+LaTeX Warning: Citation `rehman2018' on page 6 undefined on input line 205.
+
+[6]
 
 c:/Users/justi/Project/MainProject/Report/seminar_report.tex:207: LaTeX Error: Unicode character  (U+009D)
                not set up for use with LaTeX.
@@ -717,6 +731,9 @@ Underfull \hbox (badness 10000) in paragraph at lines 208--209
  []
 
 [7]
+
+LaTeX Warning: Citation `tesla2023' on page 8 undefined on input line 211.
+
 
 c:/Users/justi/Project/MainProject/Report/seminar_report.tex:212: LaTeX Error: Unicode character  (U+009D)
                not set up for use with LaTeX.
@@ -750,7 +767,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 216--217
 
  []
 
-[9] [10] [11]
+
+LaTeX Warning: Citation `cosens2023' on page 9 undefined on input line 218.
+
+[9]
+
+LaTeX Warning: Citation `park2022' on page 10 undefined on input line 221.
+
+
+LaTeX Warning: Citation `ahmad2022' on page 10 undefined on input line 223.
+
+[10] [11]
 Chapter 3.
 
 Underfull \hbox (badness 10000) in paragraph at lines 229--232
@@ -839,7 +866,7 @@ Chapter 5.
 [20
 
 ]
-<System architecture.jpg, id=111, 469.755pt x 247.67531pt>
+<System architecture.jpg, id=101, 469.755pt x 247.67531pt>
 File: System architecture.jpg Graphic file (type jpg)
 <use System architecture.jpg>
 Package pdftex.def Info: System architecture.jpg  used on input line 408.
@@ -984,7 +1011,7 @@ Chapter 10.
 [33
 
 ] [34]
-<Flow Diagram.jpg, id=157, 497.60907pt x 324.46219pt>
+<Flow Diagram.jpg, id=147, 497.60907pt x 324.46219pt>
 File: Flow Diagram.jpg Graphic file (type jpg)
 <use Flow Diagram.jpg>
 Package pdftex.def Info: Flow Diagram.jpg  used on input line 530.
@@ -996,7 +1023,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 535--536
 
  []
 
-<person detection.jpg, id=161, 716.6775pt x 405.01312pt>
+<person detection.jpg, id=152, 716.6775pt x 405.01312pt>
 File: person detection.jpg Graphic file (type jpg)
 <use person detection.jpg>
 Package pdftex.def Info: person detection.jpg  used on input line 548.
@@ -1004,7 +1031,7 @@ Package pdftex.def Info: person detection.jpg  used on input line 548.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-<mobile app.jpg, id=162, 773.13844pt x 331.99031pt>
+<mobile app.jpg, id=153, 773.13844pt x 331.99031pt>
 File: mobile app.jpg Graphic file (type jpg)
 <use mobile app.jpg>
 Package pdftex.def Info: mobile app.jpg  used on input line 554.
@@ -1090,20 +1117,27 @@ Overfull \hbox (39.46404pt too wide) in alignment at lines 22--38
 LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
  ***********
+
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
  ) 
 Here is how much of TeX's memory you used:
- 10335 strings out of 467525
- 180865 string characters out of 5423209
+ 10293 strings out of 467525
+ 180254 string characters out of 5423209
  741920 words of memory out of 5000000
- 38913 multiletter control sequences out of 15000+600000
+ 38899 multiletter control sequences out of 15000+600000
  664923 words of font info for 116 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 110i,13n,107p,2357b,450s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 110i,12n,107p,2366b,450s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtcxr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtxb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/rtxr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/txfonts/txtt.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/palatino/uplbi8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmb8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/times/utmri8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/zapfchan/uzcmi8a.pfb>
-Output written on seminar_report.pdf (58 pages, 439270 bytes).
+Output written on seminar_report.pdf (55 pages, 435129 bytes).
 PDF statistics:
- 248 PDF objects out of 1000 (max. 8388607)
- 161 compressed objects within 2 object streams
+ 239 PDF objects out of 1000 (max. 8388607)
+ 155 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
  26 words of extra memory for PDF output out of 10000 (max. 10000000)
 
