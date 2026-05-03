@@ -591,15 +591,14 @@ def update_incident_upload_status(record_id, progress=None, status=None, filepat
     """Update upload status/filepath for an incident row in SQL.
 
     Notes:
-    - Some installations don't have an `upload_progress` column. To be compatible
-      we map progress values into the existing `fileUploadedStatus` column so
-      the database is updated regardless of whether `upload_progress` exists.
-    - If both `status` and `progress` are provided, `status` takes precedence
-      because it represents an explicit fileUploadedStatus value.
+    - `upload_progress` is the preferred column for percent-complete values.
+    - `fileUploadedStatus` stores semantic status codes: 0 initial, 1 uploading,
+      2 done, -1 failed.
+    - If the schema is older and lacks `upload_progress`, progress will fall back
+      to `fileUploadedStatus` for compatibility.
 
     Parameters:
-    - progress: integer 0..100 (will be written into `fileUploadedStatus` when
-      the DB lacks a dedicated progress column)
+    - progress: integer 0..100 (written into `upload_progress` when supported)
     - status: int to set fileUploadedStatus (e.g., 0 initial, 1 uploading, 2 done, -1 failed)
     - filepath: storage URL string to set filepath
 
@@ -610,15 +609,11 @@ def update_incident_upload_status(record_id, progress=None, status=None, filepat
         cur = conn.cursor()
         parts = []
         vals = []
-        # Map `progress` into the `fileUploadedStatus` column so older schemas
-        # without `upload_progress` receive progress updates. If `progress` is
-        # provided we prefer it (it contains the percent). Otherwise fall back
-        # to the explicit `status` parameter.
+
         if progress is not None:
-            # store the numeric progress into fileUploadedStatus for compatibility
-            parts.append("fileUploadedStatus=%s")
+            parts.append("upload_progress=%s")
             vals.append(int(progress))
-        elif status is not None:
+        if status is not None:
             parts.append("fileUploadedStatus=%s")
             vals.append(int(status))
         if filepath is not None:
@@ -632,7 +627,29 @@ def update_incident_upload_status(record_id, progress=None, status=None, filepat
 
         sql = f"UPDATE incidentrecords SET {', '.join(parts)} WHERE id=%s"
         vals.append(str(record_id))
-        cur.execute(sql, tuple(vals))
+        try:
+            cur.execute(sql, tuple(vals))
+        except Exception as e:
+            # Fallback for legacy schemas without upload_progress.
+            if progress is not None and 'upload_progress' in str(e).lower():
+                parts = []
+                vals = []
+                if status is not None:
+                    parts.append("fileUploadedStatus=%s")
+                    vals.append(int(status))
+                elif progress is not None:
+                    parts.append("fileUploadedStatus=%s")
+                    vals.append(int(progress))
+                if filepath is not None:
+                    parts.append("filepath=%s")
+                    vals.append(filepath)
+
+                sql = f"UPDATE incidentrecords SET {', '.join(parts)} WHERE id=%s"
+                vals.append(str(record_id))
+                cur.execute(sql, tuple(vals))
+            else:
+                raise
+
         affected = cur.rowcount
         conn.commit()
         cur.close()
@@ -910,7 +927,14 @@ def resume_pending_uploads():
             print("Checking for pending uploads to resume...")
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id, filepath FROM incidentrecords WHERE filepath IS NOT NULL AND filepath NOT LIKE 'http%' AND filepath NOT LIKE 'gs://%' AND fileUploadedStatus != 2 AND fileUploadedStatus != 100")
+            cursor.execute(
+                "SELECT id, filepath FROM incidentrecords "
+                "WHERE filepath IS NOT NULL "
+                "  AND filepath NOT LIKE 'http%' "
+                "  AND filepath NOT LIKE 'gs://%' "
+                "  AND (upload_progress IS NULL OR upload_progress < 100) "
+                "  AND (fileUploadedStatus IS NULL OR fileUploadedStatus NOT IN (2, 100))"
+            )
             records = cursor.fetchall()
             
             cursor.execute("SELECT username FROM Userdetails LIMIT 1")
