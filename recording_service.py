@@ -15,7 +15,7 @@ from utils import (
 )
 
 # Configuration
-MODEL_PATH = r"C:/Users/ASHNA/Documents/Ashna/Project Report/ProjectWork/Backend_code/blaze_face_short_range.tflite"
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "blaze_face_short_range.tflite")
 FPS = 30
 BUFFER_DURATION = 30 
 

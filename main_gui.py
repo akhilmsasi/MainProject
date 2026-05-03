@@ -3,6 +3,22 @@ import subprocess
 import datetime
 import sys
 import os
+
+# Check and install requirements if needed
+try:
+    import firebase_admin
+    import mysql.connector
+except ImportError:
+    print("Required packages not found. Installing requirements...")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    install_script = os.path.join(script_dir, 'setup', 'install.py')
+    if os.path.exists(install_script):
+        try:
+            subprocess.check_call([sys.executable, install_script])
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to install requirements: {e}")
+            sys.exit(1)
+
 from tkinter import messagebox, ttk
 from utils import (
     db_ref,
@@ -21,7 +37,7 @@ class Secure360GUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Secure360 Cloud & SQL Control")
-        self.root.geometry("400x550")
+        self.root.geometry("400x650")
         
         self.fm = FirebaseManager()
         self.processes = []
@@ -67,6 +83,26 @@ class Secure360GUI:
         self.btn_test = tk.Button(root, text="SEND SAMPLE DATA TO CLOUD", bg="#e1e1e1", 
                                   command=self.test_firebase_connection, width=30)
         self.btn_test.pack(pady=10)
+
+        # --- 6.5 Event Status Checkboxes ---
+        self.checkbox_frame = tk.Frame(root)
+        self.checkbox_frame.pack(pady=5)
+        
+        self.chk_var2 = tk.IntVar()
+        self.chk2 = tk.Checkbutton(self.checkbox_frame, text="FACE DETECTION", variable=self.chk_var2, command=lambda: self.toggle_event_status(2, self.chk_var2))
+        self.chk2.grid(row=0, column=0, padx=5, pady=2, sticky="w")
+        
+        self.chk_var3 = tk.IntVar()
+        self.chk3 = tk.Checkbutton(self.checkbox_frame, text="HONK EVENT", variable=self.chk_var3, command=lambda: self.toggle_event_status(3, self.chk_var3))
+        self.chk3.grid(row=0, column=1, padx=5, pady=2, sticky="w")
+        
+        self.chk_var4 = tk.IntVar()
+        self.chk4 = tk.Checkbutton(self.checkbox_frame, text="HARD BRAKING", variable=self.chk_var4, command=lambda: self.toggle_event_status(4, self.chk_var4))
+        self.chk4.grid(row=1, column=0, padx=5, pady=2, sticky="w")
+        
+        self.chk_var5 = tk.IntVar()
+        self.chk5 = tk.Checkbutton(self.checkbox_frame, text="ALARM SYSTEM", variable=self.chk_var5, command=lambda: self.toggle_event_status(5, self.chk_var5))
+        self.chk5.grid(row=1, column=1, padx=5, pady=2, sticky="w")
 
         # --- 7. User Details Section (from XAMPP MySQL 'videodatabase') ---
         tk.Label(root, text="User Details (from DB):", font=('Arial', 9, 'bold')).pack(pady=(15, 0))
@@ -128,6 +164,52 @@ class Secure360GUI:
         self.check_cloud_connection()
         # Load user details once at startup
         self.refresh_user_details()
+        # Load initial checkbox statuses
+        self.load_event_statuses()
+
+    def load_event_statuses(self):
+        """Read event statuses from the DB and update checkboxes in real-time."""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT Eventtype, Eventstatus FROM event_status WHERE Eventtype IN (2, 3, 4, 5)")
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+
+            for row in rows:
+                ev_type = row['Eventtype']
+                ev_status = row['Eventstatus']
+                if ev_type == 2 and self.chk_var2.get() != ev_status:
+                    self.chk_var2.set(ev_status)
+                elif ev_type == 3 and self.chk_var3.get() != ev_status:
+                    self.chk_var3.set(ev_status)
+                elif ev_type == 4 and self.chk_var4.get() != ev_status:
+                    self.chk_var4.set(ev_status)
+                elif ev_type == 5 and self.chk_var5.get() != ev_status:
+                    self.chk_var5.set(ev_status)
+        except Exception as e:
+            print(f"Error loading event statuses: {e}")
+        
+        # Schedule the next poll in 2 seconds
+        self.root.after(2000, self.load_event_statuses)
+
+    def toggle_event_status(self, event_type, variable):
+        """Update DB when a checkbox is clicked."""
+        new_val = variable.get()
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE event_status SET Eventstatus = %s WHERE Eventtype = %s", (new_val, event_type))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print(f"Updated event {event_type} status to {new_val}")
+        except Exception as e:
+            print(f"Error updating event status: {e}")
+            messagebox.showerror("DB Error", f"Failed to update event {event_type}: {e}")
+            # Revert checkbox if DB update fails
+            variable.set(1 - new_val)
 
     def check_cloud_connection(self):
         """Pings Firebase to check connectivity."""
