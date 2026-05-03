@@ -51,6 +51,22 @@ class Secure360GUI:
         self.lbl_fb_status = tk.Label(self.status_frame, text="FIREBASE: DISCONNECTED", 
                                       fg="red", font=('Arial', 8, 'bold'))
         self.lbl_fb_status.pack(side=tk.LEFT)
+
+        # --- Camera-On / Recording Indicator (GUI only, not burned into saved video) ---
+        self._cam_dot_visible = True          # tracks blink state
+        self._cam_blink_job = None            # holds the scheduled after() id
+        self._recording_poll_job = None       # holds the recording-status poll job
+        self._last_poll_status = None         # last known recording status (True/False)
+
+        # Small canvas to draw the pulsing dot
+        self._cam_canvas = tk.Canvas(self.status_frame, width=14, height=14,
+                                     bg="#f0f0f0", highlightthickness=0)
+        self._cam_canvas.pack(side=tk.RIGHT, padx=(0, 2), pady=2)
+        self._cam_dot = self._cam_canvas.create_oval(2, 2, 12, 12, fill="#888888", outline="")
+
+        self._cam_label = tk.Label(self.status_frame, text="● CAM OFF",
+                                   fg="#888888", bg="#f0f0f0", font=('Arial', 8, 'bold'))
+        self._cam_label.pack(side=tk.RIGHT, padx=(4, 0))
         
         # --- 2. System Power Button ---
         self.btn_power = tk.Button(root, text="SYSTEM POWER: OFF", bg="red", fg="white", 
@@ -167,6 +183,8 @@ class Secure360GUI:
         self.refresh_user_details()
         # Load initial checkbox statuses
         self.load_event_statuses()
+        # Start the always-running recording-status poll
+        self._poll_recording_status()
 
     def load_event_statuses(self):
         """Read event statuses from the DB and update checkboxes in real-time."""
@@ -351,6 +369,66 @@ class Secure360GUI:
             print(f"Failed to update gear for {username}: {e}")
         print(f" Gear Update: {selection} for user {username}")
 
+    # ------------------------------------------------------------------ #
+    #  Recording-status poll — drives button label + cam indicator       #
+    # ------------------------------------------------------------------ #
+    def _poll_recording_status(self):
+        """Read recording_status from MySQL every 2 s. Always reschedules itself."""
+        is_recording = False
+
+        if self.is_on:
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT status FROM recording_status LIMIT 1")
+                row = cursor.fetchone()
+                cursor.close()
+                conn.close()
+                is_recording = bool(row and int(row[0]) == 1)
+            except Exception as e:
+                print(f"[RecordingPoll] DB error: {e}")
+
+            # Update button
+            if is_recording:
+                self.btn_record.config(text="STOP RECORDING", bg="orange")
+            else:
+                self.btn_record.config(text="START RECORDING", bg="blue")
+        else:
+            # System off — force everything grey
+            is_recording = False
+
+        # Always apply indicator state (no diff guard)
+        if is_recording:
+            self._cam_label.config(text="● REC ON", fg="#ff0000")
+            self._cam_canvas.itemconfig(self._cam_dot, fill="#ff2222")
+            if self._cam_blink_job is None:
+                self._blink_cam_dot()
+        else:
+            if self._cam_blink_job is not None:
+                self.root.after_cancel(self._cam_blink_job)
+                self._cam_blink_job = None
+            self._cam_canvas.itemconfig(self._cam_dot, fill="#888888")
+            self._cam_label.config(text="● REC OFF", fg="#888888")
+
+        self._last_poll_status = is_recording
+        # Always reschedule — never stops
+        self.root.after(2000, self._poll_recording_status)
+
+    # ------------------------------------------------------------------ #
+    #  Camera indicator blink loop                                        #
+    # ------------------------------------------------------------------ #
+    def _blink_cam_dot(self):
+        """Alternate dot between bright/dark red every 500 ms while recording."""
+        if not self._last_poll_status:
+            self._cam_blink_job = None
+            return
+        colour = "#ff2222" if self._cam_dot_visible else "#991111"
+        self._cam_canvas.itemconfig(self._cam_dot, fill=colour)
+        self._cam_dot_visible = not self._cam_dot_visible
+        self._cam_blink_job = self.root.after(500, self._blink_cam_dot)
+
+    # ------------------------------------------------------------------ #
+
     def toggle_power(self):
         if not self.is_on:
             initialize_database()
@@ -364,13 +442,36 @@ class Secure360GUI:
             p1 = subprocess.Popen([sys.executable, os.path.join(script_dir, 'recording_service.py')])
             p2 = subprocess.Popen([sys.executable, os.path.join(script_dir, 'data_monitor.py')])
             self.processes = [p1, p2]
+            # Poll already runs continuously; reset state so first tick applies
+            self._last_poll_status = False
         else:
-            for p in self.processes: p.terminate()
+            # --- Graceful shutdown ---
+            # 1. Signal recording_service to exit cleanly (closes the cv2 window itself)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            stop_flag = os.path.join(script_dir, ".stop_recording")
+            try:
+                open(stop_flag, 'w').close()
+            except Exception as e:
+                print(f"Warning: could not write stop flag: {e}")
+
+            # 2. Give it up to 1.5 s to exit on its own, then force-kill as fallback
+            def _finish_shutdown(procs):
+                import time
+                time.sleep(1.5)
+                for p in procs:
+                    if p.poll() is None:   # still running
+                        p.terminate()
+
+            import threading
+            threading.Thread(target=_finish_shutdown, args=(list(self.processes),), daemon=True).start()
+
             self.is_on = False
             self.btn_power.config(text="SYSTEM POWER: OFF", bg="red")
             self.btn_record.config(state=tk.DISABLED, bg="gray")
             self.event_menu.config(state=tk.DISABLED)
             self.gear_menu.config(state=tk.DISABLED)
+            # Reset state; next poll tick (always running) will grey out the indicator
+            self._last_poll_status = False
 
     # Note: database initialization is provided by `initialize_database` imported from `utils`.
 
