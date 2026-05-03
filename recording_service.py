@@ -1,144 +1,118 @@
 import cv2
 import collections
-import datetime
 import time
+import datetime
 import os
-import random
-from utils import get_db_connection, RecordingState, OUTPUT_PATH, TVM_LOCATIONS, insert_incident_record
+import threading
+from ai_engine import FaceDetectionEngine  # <--- IMPORTING YOUR AI LOGIC
+from visualize import visualize
+from utils import (
+    get_db_connection, 
+    OUTPUT_PATH, 
+    insert_incident_record,
+    RecordingState,
+    TVM_LOCATIONS
+)
 
-def save_video(frames, event_type_val):
-    if not frames: 
-        print("⚠️ No frames to save.")
-        return
-    
+# Configuration
+MODEL_PATH = r"C:/Users/ASHNA/Documents/Ashna/Project Report/ProjectWork/Backend_code/blaze_face_short_range.tflite"
+FPS = 30
+BUFFER_DURATION = 30 
+
+def save_and_sync_worker(frames, event_name, event_type, username):
+    """Background task to save MP4 and update SQL/Firebase."""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        cursor.execute("SELECT gear FROM recording_status LIMIT 1")
-        row = cursor.fetchone()
-        current_gear = row['gear'] if row else 0
-
-        now = datetime.datetime.now()
-        timestamp = now.strftime("%Y%m%d_%H%M%S")
-        event_name = RecordingState(event_type_val).name
-        video_id = f"{event_name}_{timestamp}"
-        filename = os.path.join(OUTPUT_PATH, f"{video_id}.mp4")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        record_id = f"{event_name}_{timestamp}"
+        local_path = os.path.join(OUTPUT_PATH, f"{record_id}.mp4")
         
         h, w, _ = frames[0].shape
-        out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), 20.0, (w, h))
-        for f in frames: 
-            out.write(f)
+        out = cv2.VideoWriter(local_path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (w, h))
+        for f in frames: out.write(f)
         out.release()
-        print(f"DEBUG: Video file created at {filename}")
-
-        loc_data = random.choice(TVM_LOCATIONS)
-        lat, lng, place, road = loc_data[0], loc_data[1], loc_data[2], loc_data[3]
-        speed = random.randint(40, 90)
-
-        success = insert_incident_record(
-            record_id=video_id,
-            incident_dt=now,
-            title=event_name,
-            locationLat=lat,
-            locationLong=lng,
-            fileUploadedStatus=0,
-            placeCityName=place,
-            roadName=road,
-            vehicleSpeed=speed,
-            incidentType=event_type_val,
-            gear=current_gear,
-            filepath=filename
-        )
-
-        if success:
-            print(f"✅ SUCCESS: Incident {video_id} logged at {place}")
-        else:
-            print(f"❌ FAILED: Incident {video_id} could not be logged to DB")
-    except Exception as e:
-        print(f"❌ CRITICAL ERROR in save_video: {e}")
-
-def reset_db_status():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE recording_status SET status = 0, EventType = 0")
-        conn.commit()
-        conn.close()
-        print("🔄 Database Reset: Status=0, Event=0")
-    except Exception as e:
-        print(f"Reset Error: {e}")
-
-def run_recorder():
-    cap = cv2.VideoCapture(0)
-    prev_frame_time = 0
-    target_fps = 20.0
-    pre_buffer_limit = int(30 * target_fps)
-    total_limit = int(60 * target_fps)
-    
-    pre_buffer = collections.deque(maxlen=pre_buffer_limit)
-    active_frames = []
-    is_recording = False
-    current_event = 0
-
-    print("📹 Recorder Service: ACTIVE.")
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret: break
-
-        # --- FIX: Define h and w here ---
-        h, w, _ = frame.shape 
-
-        new_frame_time = time.time()
-        fps_val = 1 / (new_frame_time - prev_frame_time) if (new_frame_time - prev_frame_time) > 0 else 0
-        prev_frame_time = new_frame_time
-
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT status, EventType FROM recording_status LIMIT 1")
-            row = cursor.fetchone()
-            conn.close()
-
-            db_status = row['status'] if row else 0
-            event_type = row['EventType'] if row else 0
-
-            if db_status == 1 and not is_recording:
-                print(f"🔴 RECORDING TRIGGERED! Event: {RecordingState(event_type).name}")
-                is_recording = True
-                current_event = event_type
-                active_frames = list(pre_buffer)
-
-            elif is_recording and (db_status == 0 or len(active_frames) >= total_limit):
-                save_video(active_frames, current_event)
-                is_recording = False
-                active_frames = []
-                reset_db_status()
-
-        except Exception as e:
-            print(f"DB Loop Error: {e}")
-
-        clean_frame = frame.copy()
-        if is_recording:
-            active_frames.append(clean_frame)
-        else:
-            pre_buffer.append(clean_frame)
-
-        display_frame = frame.copy()
-        cv2.putText(display_frame, f"FPS: {int(fps_val)}", (10, 30), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         
-        if is_recording:
-            # Now 'w' is defined correctly
-            cv2.circle(display_frame, (w - 30, 30), 10, (0, 0, 255), -1)
+        import random
+        loc = random.choice(TVM_LOCATIONS)
+        insert_incident_record(
+            record_id=record_id, incident_dt=datetime.datetime.now(),
+            title=f"Alert: {event_name}", locationLat=loc[0], locationLong=loc[1],
+            placeCityName=loc[2], roadName=loc[3], 
+            vehicleSpeed=random.uniform(20, 50),
+            incidentType=int(event_type), gear=0, 
+            filepath=local_path, username=username
+        )
+        print(f"✅ Event Saved & Synced: {record_id}")
+    except Exception as e:
+        print(f"❌ Worker Error: {e}")
 
-        cv2.imshow("Secure360 - Live Monitor", display_frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+def run_service(username="akhil"):
+    # Initialize the AI from the other file
+    ai_logic = FaceDetectionEngine(MODEL_PATH)
+    
+    cap = cv2.VideoCapture(0)
+    history_buffer = collections.deque(maxlen=FPS * BUFFER_DURATION)
+    
+    is_recording = False
+    event_start_time = 0
+    event_frames = []
+    current_name, current_type = "", 0
 
-    cap.release()
-    cv2.destroyAllWindows()
+    print(f"🚀 Service Running for {username}...")
+
+    try:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret: break
+
+            # 1. Use the AI Logic from ai_engine.py
+            face_detected, detection_result = ai_logic.check_for_face(frame)
+            
+            # 2. Add boxes (visualize)
+            annotated_frame = visualize(frame, detection_result)
+            history_buffer.append(annotated_frame.copy())
+
+            if not is_recording:
+                # Check DB for manual trigger
+                db_trigger = False
+                try:
+                    conn = get_db_connection()
+                    cursor = conn.cursor(dictionary=True)
+                    cursor.execute("SELECT status, EventType FROM recording_status LIMIT 1")
+                    row = cursor.fetchone()
+                    cursor.close()
+                    conn.close()
+                    if row and row['status'] == 1:
+                        db_trigger = True
+                        current_type = row['EventType']
+                        current_name = RecordingState(current_type).name
+                except: pass
+
+                if face_detected or db_trigger:
+                    is_recording = True
+                    event_start_time = time.time()
+                    if face_detected:
+                        current_name, current_type = "AI_FACE_DETECT", 2
+                    
+                    print(f"🔔 TRIGGER: {current_name}")
+                    # Capture the "Past" 30 seconds
+                    event_frames = list(history_buffer)
+            else:
+                # Capture the "Future" 30 seconds
+                event_frames.append(annotated_frame.copy())
+                
+                if time.time() - event_start_time >= BUFFER_DURATION:
+                    # Save the full 60s video (buffered past + captured future)
+                    threading.Thread(
+                        target=save_and_sync_worker, 
+                        args=(list(event_frames), current_name, current_type, username)
+                    ).start()
+                    is_recording = False
+
+            cv2.imshow("Secure360 Monitor", annotated_frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'): break
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    run_recorder()
+    run_service("akhil")
