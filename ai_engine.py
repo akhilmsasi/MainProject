@@ -1,30 +1,46 @@
-import mediapipe as mp
 import cv2
+import numpy as np
 
-class FaceDetectionEngine:
-    def __init__(self, model_path):
-        # Initialize MediaPipe Task API
-        BaseOptions = mp.tasks.BaseOptions
-        FaceDetectorOptions = mp.tasks.vision.FaceDetectorOptions
-        FaceDetector = mp.tasks.vision.FaceDetector
-        VisionRunningMode = mp.tasks.vision.RunningMode
+class MultiObjectMotionDetectionEngine:
+    def __init__(self, prototxt_path, model_path):
+        # Load the Caffe model
+        self.net = cv2.dnn.readNetFromCaffe(prototxt_path, model_path)
+        # Class names for MobileNet SSD
+        self.class_names = [
+            "background", "aeroplane", "bicycle", "bird", "boat", "bottle", 
+            "bus", "car", "cat", "chair", "cow", "diningtable", "dog", 
+            "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", 
+            "train", "tvmonitor"
+        ]
+        print("🤖 AI Engine: Multi-Object Detector Initialized.")
 
-        options = FaceDetectorOptions(
-            base_options=BaseOptions(model_asset_path=model_path),
-            running_mode=VisionRunningMode.IMAGE
-        )
-        self.detector = FaceDetector.create_from_options(options)
-        print("🤖 AI Engine: Face Detector Initialized.")
-
-    def check_for_face(self, frame, threshold=0.8):
-        """Returns (True/False, detection_result)"""
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
-        result = self.detector.detect(mp_image)
+    def detect_objects(self, frame, conf_threshold=0.5):
+        """Processes the frame and returns a list of detected objects."""
+        (h, w) = frame.shape[:2]
         
-        face_found = False
-        if result and result.detections:
-            for det in result.detections:
-                if det.categories[0].score > threshold:
-                    face_found = True
-                    break
-        return face_found, result
+        # Preprocess frame for MobileNet SSD (300x300)
+        blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 0.007843, (300, 300), 127.5)
+        self.net.setInput(blob)
+        detections = self.net.forward()
+
+        results = []
+        # Loop over the detections
+        for i in range(detections.shape[2]):
+            confidence = detections[0, 0, i, 2]
+            
+            # Filter by confidence
+            if confidence > conf_threshold:
+                idx = int(detections[0, 0, i, 1])
+                
+                # Get bounding box coordinates
+                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                (startX, startY, endX, endY) = box.astype("int")
+                
+                # Create result dictionary
+                results.append({
+                    'class_name': self.class_names[idx] if idx < len(self.class_names) else "unknown",
+                    'confidence': float(confidence),
+                    'box': (int(startX), int(startY), int(endX), int(endY))
+                })
+        
+        return results

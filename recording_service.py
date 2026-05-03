@@ -4,7 +4,7 @@ import time
 import datetime
 import os
 import threading
-from ai_engine import FaceDetectionEngine  # <--- IMPORTING YOUR AI LOGIC
+from ai_engine import MultiObjectMotionDetectionEngine  # <--- Use the new Engine
 from visualize import visualize
 from utils import (
     get_db_connection, 
@@ -14,8 +14,10 @@ from utils import (
     TVM_LOCATIONS
 )
 
-# Configuration
-MODEL_PATH = r"C:/Users/ASHNA/Documents/Ashna/Project Report/ProjectWork/Backend_code/blaze_face_short_range.tflite"
+# Configuration - UPDATE THESE PATHS TO MATCH YOUR COMPUTER
+PROTOTXT_PATH = r"C:\Users\ASHNA\Documents\MainProject\MainProject\models\deploy.prototxt"
+MODEL_PATH = r"C:\Users\ASHNA\Documents\MainProject\MainProject\models\mobilenet_iter_73000.caffemodel"
+
 FPS = 30
 BUFFER_DURATION = 30 
 
@@ -46,8 +48,8 @@ def save_and_sync_worker(frames, event_name, event_type, username):
         print(f"❌ Worker Error: {e}")
 
 def run_service(username="akhil"):
-    # Initialize the AI from the other file
-    ai_logic = FaceDetectionEngine(MODEL_PATH)
+    # Initialize the new Caffe-based Engine
+    ai_logic = MultiObjectMotionDetectionEngine(prototxt_path=PROTOTXT_PATH, model_path=MODEL_PATH)
     
     cap = cv2.VideoCapture(0)
     history_buffer = collections.deque(maxlen=FPS * BUFFER_DURATION)
@@ -57,18 +59,21 @@ def run_service(username="akhil"):
     event_frames = []
     current_name, current_type = "", 0
 
-    print(f"🚀 Service Running for {username}...")
+    print(f"🚀 Service Running for {username} with Caffe Model...")
 
     try:
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret: break
 
-            # 1. Use the AI Logic from ai_engine.py
-            face_detected, detection_result = ai_logic.check_for_face(frame)
+            # 1. Use new AI Logic (Returns list of detections)
+            detections = ai_logic.detect_objects(frame)
+            
+            # Check if any detection is a 'person'
+            person_detected = any(d['class_name'].lower() == 'person' for d in detections)
             
             # 2. Add boxes (visualize)
-            annotated_frame = visualize(frame, detection_result)
+            annotated_frame = visualize(frame, detections)
             history_buffer.append(annotated_frame.copy())
 
             if not is_recording:
@@ -87,11 +92,11 @@ def run_service(username="akhil"):
                         current_name = RecordingState(current_type).name
                 except: pass
 
-                if face_detected or db_trigger:
+                if person_detected or db_trigger:
                     is_recording = True
                     event_start_time = time.time()
-                    if face_detected:
-                        current_name, current_type = "AI_FACE_DETECT", 2
+                    if person_detected:
+                        current_name, current_type = "AI_PERSON_DETECT", 2
                     
                     print(f"🔔 TRIGGER: {current_name}")
                     # Capture the "Past" 30 seconds
