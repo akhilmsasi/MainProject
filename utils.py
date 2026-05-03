@@ -562,139 +562,7 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
 
                     # If a local filepath was provided, start upload in a separate thread/function
                     if local_filepath:
-                        def _upload_worker(path, e_ref, rid_inner, uname_inner):
-                            try:
-                                # Ensure file exists
-                                if not os.path.isfile(path):
-                                    print(f"Upload worker: file not found {path}")
-                                    try:
-                                        e_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
-                                    except Exception:
-                                        pass
-                                    # update SQL to indicate failure
-                                    # mark SQL row as failed (file missing)
-                                    update_incident_upload_status(rid_inner, progress=0, status=-1)
-                                    return
-
-                                total_size = os.path.getsize(path)
-                                bytes_sent = 0
-                                # Use a smaller chunk size to allow finer-grained progress updates
-                                chunk_size = 64 * 1024  # 64KB
-
-                                # Destination in storage: Videos/{username}/{record_id}.<ext>
-                                if not bucket:
-                                    print(f"Upload worker: storage bucket not available, skipping upload for {rid_inner}")
-                                    try:
-                                        e_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
-                                    except Exception:
-                                        pass
-                                    # update SQL to indicate failure due to missing bucket
-                                    # mark SQL row as failed (no bucket)
-                                    update_incident_upload_status(rid_inner, progress=0, status=-1)
-                                    return
-
-                                dest_path = f"Videos/{uname_inner}/{rid_inner}" + os.path.splitext(path)[1]
-                                blob = bucket.blob(dest_path)
-
-                                # Try streaming write to storage so we can update progress per chunk.
-                                try:
-                                    with open(path, 'rb') as f_in:
-                                        # Open a writeable file-like object to blob (resumable)
-                                        with blob.open("wb") as f_out:
-                                            last_progress = -1
-                                            while True:
-                                                chunk = f_in.read(chunk_size)
-                                                if not chunk:
-                                                    break
-                                                f_out.write(chunk)
-                                                bytes_sent += len(chunk)
-                                                # Compute percentage and ensure we only update when percentage changes
-                                                progress = int((bytes_sent / total_size) * 100)
-                                                if progress != last_progress:
-                                                    last_progress = progress
-                                                    # Print progress locally and update RTDB
-                                                    try:
-                                                        print(f"Upload progress for {rid_inner}: {progress}%")
-                                                    except Exception:
-                                                        pass
-                                                    try:
-                                                        e_ref.update({'upload_progress': progress, 'fileUploadedStatus': 1})
-                                                    except Exception as ue:
-                                                        print(f"RTDB progress update failed for {rid_inner}: {ue}")
-                                                    # update SQL with progress
-                                                    # update SQL with progress
-                                                    try:
-                                                        update_incident_upload_status(rid_inner, progress=progress, status=1)
-                                                    except Exception as sqle:
-                                                        print(f"SQL progress update failed for {rid_inner}: {sqle}")
-
-                                    # Make blob publicly accessible (optional) and get URL
-                                    try:
-                                        blob.make_public()
-                                        storage_url = blob.public_url
-                                    except Exception:
-                                        storage_url = f"gs://{bucket.name}/{dest_path}"
-
-                                    # Final update: set filepath to storage url, progress 100 and status 2
-                                    def _rt_update_with_retry(ref_obj, payload, retries=3):
-                                        import time
-                                        attempt = 0
-                                        while attempt < retries:
-                                            try:
-                                                ref_obj.update(payload)
-                                                return True
-                                            except Exception as eup:
-                                                attempt += 1
-                                                print(f"RTDB final update attempt {attempt} failed for {rid_inner}: {eup}")
-                                                time.sleep(1)
-                                        return False
-
-                                    final_payload = {'upload_progress': 100, 'fileUploadedStatus': 2, 'filepath': storage_url}
-                                    ok_update = _rt_update_with_retry(e_ref, final_payload, retries=3)
-                                    if not ok_update:
-                                        print(f"Warning: final RTDB update failed for {rid_inner} after retries")
-                                    # update SQL final status
-                                    try:
-                                        update_incident_upload_status(rid_inner, progress=100, status=2, filepath=storage_url)
-                                    except Exception as sqle:
-                                        print(f"SQL final update failed for {rid_inner}: {sqle}")
-
-                                    print(f" Upload complete for {rid_inner} -> {storage_url}")
-                                except Exception as ex_stream:
-                                    # Fall back to a single upload and mark as complete on success
-                                    try:
-                                        blob.upload_from_filename(path)
-                                        try:
-                                            blob.make_public()
-                                            storage_url = blob.public_url
-                                        except Exception:
-                                            storage_url = f"gs://{bucket.name}/{dest_path}"
-                                        # Final update with retry
-                                        final_payload = {'upload_progress': 100, 'fileUploadedStatus': 2, 'filepath': storage_url}
-                                        ok_update = _rt_update_with_retry(e_ref, final_payload, retries=3)
-                                        if not ok_update:
-                                            print(f"Warning: final RTDB update failed for {rid_inner} after fallback upload")
-                                        # update SQL final status after fallback
-                                        try:
-                                            update_incident_upload_status(rid_inner, progress=100, status=2, filepath=storage_url)
-                                        except Exception as sqle:
-                                            print(f"SQL final update failed for {rid_inner} after fallback: {sqle}")
-
-                                        print(f" Upload (fallback) complete for {rid_inner} -> {storage_url}")
-                                    except Exception as ex_upload:
-                                        print(f"Upload failed for {rid_inner}: {ex_upload}")
-                                        try:
-                                            e_ref.update({'fileUploadedStatus': -1})
-                                        except Exception as eu:
-                                            print(f"Failed to set failure status in RTDB for {rid_inner}: {eu}")
-                                        try:
-                                            update_incident_upload_status(rid_inner, status=-1)
-                                        except Exception as sqle:
-                                            print(f"SQL failure status update failed for {rid_inner}: {sqle}")
-                            except Exception as e:
-                                print(f"Uploader exception for {rid_inner}: {e}")
-
-                        upl_thread = threading.Thread(target=_upload_worker, args=(local_filepath, event_ref, rid, u), daemon=True)
+                        upl_thread = threading.Thread(target=upload_video_to_cloud, args=(rid, local_filepath, u), daemon=True)
                         upl_thread.start()
                 except Exception as e:
                     print(f"Failed to push event {rid} to Firebase: {e}")
@@ -915,3 +783,165 @@ def start_background_firebase_to_sql_sync(poll_interval=30):
     t = threading.Thread(target=_loop, daemon=True)
     t.start()
     return t
+
+def upload_video_to_cloud(record_id, local_filepath, username):
+    """Standalone function to upload a video file to Firebase Storage."""
+    try:
+        if not db_ref:
+            print(f"upload_video_to_cloud: db_ref not initialized, cannot upload {record_id}")
+            return
+            
+        event_ref = db_ref.child('users').child(str(username)).child('Events').child(str(record_id))
+
+        if not os.path.isfile(local_filepath):
+            print(f"Upload worker: file not found {local_filepath}")
+            try:
+                event_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
+            except Exception:
+                pass
+            update_incident_upload_status(record_id, progress=0, status=-1)
+            return
+
+        total_size = os.path.getsize(local_filepath)
+        bytes_sent = 0
+        chunk_size = 64 * 1024  # 64KB
+
+        if not bucket:
+            print(f"Upload worker: storage bucket not available, skipping upload for {record_id}")
+            try:
+                event_ref.update({'upload_progress': 0, 'fileUploadedStatus': -1})
+            except Exception:
+                pass
+            update_incident_upload_status(record_id, progress=0, status=-1)
+            return
+
+        dest_path = f"Videos/{username}/{record_id}" + os.path.splitext(local_filepath)[1]
+        blob = bucket.blob(dest_path)
+
+        def _rt_update_with_retry(ref_obj, payload, retries=3):
+            import time
+            attempt = 0
+            while attempt < retries:
+                try:
+                    ref_obj.update(payload)
+                    return True
+                except Exception as eup:
+                    attempt += 1
+                    print(f"RTDB final update attempt {attempt} failed for {record_id}: {eup}")
+                    time.sleep(1)
+            return False
+
+        try:
+            with open(local_filepath, 'rb') as f_in:
+                with blob.open("wb") as f_out:
+                    last_progress = -1
+                    while True:
+                        chunk = f_in.read(chunk_size)
+                        if not chunk:
+                            break
+                        f_out.write(chunk)
+                        bytes_sent += len(chunk)
+                        progress = int((bytes_sent / total_size) * 100)
+                        if progress != last_progress:
+                            last_progress = progress
+                            try:
+                                print(f"Upload progress for {record_id}: {progress}%")
+                            except Exception:
+                                pass
+                            try:
+                                event_ref.update({'upload_progress': progress, 'fileUploadedStatus': 1})
+                            except Exception as ue:
+                                print(f"RTDB progress update failed for {record_id}: {ue}")
+                            try:
+                                update_incident_upload_status(record_id, progress=progress, status=1)
+                            except Exception as sqle:
+                                print(f"SQL progress update failed for {record_id}: {sqle}")
+
+            try:
+                blob.make_public()
+                storage_url = blob.public_url
+            except Exception:
+                storage_url = f"gs://{bucket.name}/{dest_path}"
+
+            final_payload = {'upload_progress': 100, 'fileUploadedStatus': 2, 'filepath': storage_url}
+            ok_update = _rt_update_with_retry(event_ref, final_payload, retries=3)
+            if not ok_update:
+                print(f"Warning: final RTDB update failed for {record_id} after retries")
+            try:
+                update_incident_upload_status(record_id, progress=100, status=2, filepath=storage_url)
+            except Exception as sqle:
+                print(f"SQL final update failed for {record_id}: {sqle}")
+
+            print(f" Upload complete for {record_id} -> {storage_url}")
+        except Exception as ex_stream:
+            try:
+                blob.upload_from_filename(local_filepath)
+                try:
+                    blob.make_public()
+                    storage_url = blob.public_url
+                except Exception:
+                    storage_url = f"gs://{bucket.name}/{dest_path}"
+                final_payload = {'upload_progress': 100, 'fileUploadedStatus': 2, 'filepath': storage_url}
+                ok_update = _rt_update_with_retry(event_ref, final_payload, retries=3)
+                if not ok_update:
+                    print(f"Warning: final RTDB update failed for {record_id} after fallback upload")
+                try:
+                    update_incident_upload_status(record_id, progress=100, status=2, filepath=storage_url)
+                except Exception as sqle:
+                    print(f"SQL final update failed for {record_id} after fallback: {sqle}")
+                print(f" Upload (fallback) complete for {record_id} -> {storage_url}")
+            except Exception as ex_upload:
+                print(f"Upload failed for {record_id}: {ex_upload}")
+                try:
+                    event_ref.update({'fileUploadedStatus': -1})
+                except Exception as eu:
+                    print(f"Failed to set failure status in RTDB for {record_id}: {eu}")
+                try:
+                    update_incident_upload_status(record_id, status=-1)
+                except Exception as sqle:
+                    print(f"SQL failure status update failed for {record_id}: {sqle}")
+    except Exception as e:
+        print(f"Uploader exception for {record_id}: {e}")
+
+def resume_pending_uploads():
+    """Finds uncompleted or failed uploads and resumes them."""
+    def _worker():
+        try:
+            print("Checking for pending uploads to resume...")
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT id, filepath FROM incidentrecords WHERE filepath IS NOT NULL AND filepath NOT LIKE 'http%' AND filepath NOT LIKE 'gs://%' AND fileUploadedStatus != 2 AND fileUploadedStatus != 100")
+            records = cursor.fetchall()
+            
+            cursor.execute("SELECT username FROM Userdetails LIMIT 1")
+            r = cursor.fetchone()
+            username = r['username'] if r and 'username' in r else None
+
+            cursor.close()
+            conn.close()
+
+            if not username:
+                print("No username available for resuming uploads.", flush=True)
+                return
+
+            resumed_count = 0
+            for row in records:
+                record_id = row['id']
+                filepath = row['filepath']
+                
+                if filepath and os.path.isfile(filepath):
+                    print(f"Resuming upload for {record_id} from {filepath}", flush=True)
+                    update_incident_upload_status(record_id, progress=0, status=1)
+                    
+                    upl_thread = threading.Thread(target=upload_video_to_cloud, args=(record_id, filepath, username), daemon=True)
+                    upl_thread.start()
+                    resumed_count += 1
+            if resumed_count > 0:
+                print(f"Resumed {resumed_count} pending uploads.", flush=True)
+            else:
+                print("No pending uploads found.", flush=True)
+        except Exception as e:
+            print(f"Error resuming pending uploads: {e}", flush=True)
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()

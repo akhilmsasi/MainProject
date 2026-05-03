@@ -29,6 +29,7 @@ from utils import (
     sync_recording_status_sql_to_firebase,
     write_user_recording_status,
     update_user_recording_status,
+    resume_pending_uploads,
 )
 from firebase_manager import FirebaseManager
 from firebase_admin import db
@@ -426,6 +427,11 @@ class Secure360GUI:
 if __name__ == "__main__":
     import tkinter.messagebox
     import datetime
+    
+    # Initialize DB (if needed) and resume any pending uploads immediately on startup
+    initialize_database()
+    resume_pending_uploads()
+    
     root = tk.Tk()
     app = Secure360GUI(root)
     root.mainloop()
