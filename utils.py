@@ -22,7 +22,14 @@ db_ref = None
 bucket = None
 BUCKET_NAME = None
 
-def _print_service_account_summary(path="serviceAccountKey.json"):
+
+def _get_service_account_path():
+    # Always resolve relative to this file's directory
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "serviceAccountKey.json")
+
+def _print_service_account_summary(path=None):
+    if path is None:
+        path = _get_service_account_path()
     try:
         with open(path, 'r', encoding='utf-8') as f:
             j = json.load(f)
@@ -33,7 +40,8 @@ def _print_service_account_summary(path="serviceAccountKey.json"):
         print(f"Could not read serviceAccountKey.json for summary: {e}")
 
 try:
-    cred = credentials.Certificate("serviceAccountKey.json")
+    service_account_path = _get_service_account_path()
+    cred = credentials.Certificate(service_account_path)
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://fir-7211b-default-rtdb.firebaseio.com/',
         'storageBucket': 'fir-7211b.appspot.com'
@@ -111,6 +119,26 @@ def initialize_database():
         db_name = temp_config.pop("database")
         conn = mysql.connector.connect(**temp_config)
         cursor = conn.cursor()
+
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+        cursor.execute(f"USE {db_name}")
+
+        # Userdetails Table (schema based on usage in main_gui.py)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Userdetails (
+                username VARCHAR(100) PRIMARY KEY,
+                name VARCHAR(255),
+                address VARCHAR(255),
+                email VARCHAR(255),
+                contactNumber VARCHAR(20),
+                altContactNumber VARCHAR(20),
+                vehicleNumber VARCHAR(50),
+                vehicleModel VARCHAR(100),
+                vehicleColor VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor = conn.cursor()
         
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
         cursor.execute(f"USE {db_name}")
@@ -170,7 +198,7 @@ def initialize_database():
             cursor.execute("SELECT COUNT(*) FROM event_status WHERE Eventtype = %s", (event_type,))
             if cursor.fetchone()[0] == 0:
                 cursor.execute("INSERT INTO event_status (Eventtype, Eventstatus) VALUES (%s, 0)", (event_type,))
-                print(f"➕ Added default EventType {event_type} to event_status")
+                print(f" Added default EventType {event_type} to event_status")
 
 
         cursor.execute("SELECT COUNT(*) FROM recording_status")
@@ -179,9 +207,9 @@ def initialize_database():
 
         conn.commit()
         conn.close()
-        print("✅ Database initialization complete.")
+        print(" Database initialization complete.")
     except Exception as e:
-        print(f"❌ Database Setup Error: {e}")
+        print(f" Database Setup Error: {e}")
 
 
 def sync_user_recording_status_to_firebase():
@@ -215,9 +243,9 @@ def sync_user_recording_status_to_firebase():
                     print(f"recording_status already present for user: {uname}")
             except Exception as e:
                 print(f"Failed to sync user {uname}: {e}")
-        print("✅ User recording_status sync complete.")
+        print(" User recording_status sync complete.")
     except Exception as e:
-        print(f"❌ Error while syncing user recording_status to Firebase: {e}")
+        print(f" Error while syncing user recording_status to Firebase: {e}")
 
 
 def write_user_recording_status(username, status=0, event_type=0, gear=0):
@@ -484,7 +512,7 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
         conn.commit()
         cursor.close()
         conn.close()
-        print(f"✅ insert_incident_record: inserted {record_id}")
+        print(f" insert_incident_record: inserted {record_id}")
         # Build payload to push to Firebase asynchronously
         try:
             payload = {
@@ -530,7 +558,7 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                     # Path: /users/{username}/Events/{record_id}
                     event_ref = db_ref.child('users').child(str(u)).child('Events').child(str(rid))
                     event_ref.set(pl)
-                    print(f"✅ Pushed event {rid} to Firebase under users/{u}/Events/{rid}")
+                    print(f" Pushed event {rid} to Firebase under users/{u}/Events/{rid}")
 
                     # If a local filepath was provided, start upload in a separate thread/function
                     if local_filepath:
@@ -631,7 +659,7 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                     except Exception as sqle:
                                         print(f"SQL final update failed for {rid_inner}: {sqle}")
 
-                                    print(f"✅ Upload complete for {rid_inner} -> {storage_url}")
+                                    print(f" Upload complete for {rid_inner} -> {storage_url}")
                                 except Exception as ex_stream:
                                     # Fall back to a single upload and mark as complete on success
                                     try:
@@ -652,7 +680,7 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
                                         except Exception as sqle:
                                             print(f"SQL final update failed for {rid_inner} after fallback: {sqle}")
 
-                                        print(f"✅ Upload (fallback) complete for {rid_inner} -> {storage_url}")
+                                        print(f" Upload (fallback) complete for {rid_inner} -> {storage_url}")
                                     except Exception as ex_upload:
                                         print(f"Upload failed for {rid_inner}: {ex_upload}")
                                         try:
@@ -679,7 +707,7 @@ def insert_incident_record(record_id, incident_dt, title, locationLat=0.0, locat
 
         return True
     except Exception as e:
-        print(f"❌ insert_incident_record error: {e}")
+        print(f" insert_incident_record error: {e}")
         try:
             cursor.close()
         except Exception:

@@ -1,6 +1,8 @@
 import tkinter as tk
 import subprocess
 import datetime
+import sys
+import os
 from tkinter import messagebox, ttk
 from utils import (
     db_ref,
@@ -264,7 +266,7 @@ class Secure360GUI:
                 messagebox.showwarning("Firebase Update", f"Failed to update Firebase for {username}")
         except Exception as e:
             print(f"Failed to update gear for {username}: {e}")
-        print(f"⚙️ Gear Update: {selection} for user {username}")
+        print(f" Gear Update: {selection} for user {username}")
 
     def toggle_power(self):
         if not self.is_on:
@@ -275,8 +277,9 @@ class Secure360GUI:
             self.event_menu.config(state=tk.NORMAL)
             self.gear_menu.config(state=tk.NORMAL)
             # Start services
-            p1 = subprocess.Popen(['python', 'recording_service.py'])
-            p2 = subprocess.Popen(['python', 'data_monitor.py'])
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            p1 = subprocess.Popen([sys.executable, os.path.join(script_dir, 'recording_service.py')])
+            p2 = subprocess.Popen([sys.executable, os.path.join(script_dir, 'data_monitor.py')])
             self.processes = [p1, p2]
         else:
             for p in self.processes: p.terminate()
