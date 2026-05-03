@@ -7,15 +7,15 @@ import threading
 from ai_engine import FaceDetectionEngine  # <--- IMPORTING YOUR AI LOGIC
 from visualize import visualize
 from utils import (
-    get_db_connection, 
-    OUTPUT_PATH, 
+    get_db_connection,
+    OUTPUT_PATH,
     insert_incident_record,
     RecordingState,
-    TVM_LOCATIONS
+    TVM_LOCATIONS,
+    resume_pending_uploads
 )
-
 # Configuration
-MODEL_PATH = r"C:/Users/ASHNA/Documents/Ashna/Project Report/ProjectWork/Backend_code/blaze_face_short_range.tflite"
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "blaze_face_short_range.tflite")
 FPS = 30
 BUFFER_DURATION = 30 
 
@@ -46,6 +46,9 @@ def save_and_sync_worker(frames, event_name, event_type, username):
         print(f"❌ Worker Error: {e}")
 
 def run_service(username="akhil"):
+    # Resume any pending uploads
+    resume_pending_uploads()
+    
     # Initialize the AI from the other file
     ai_logic = FaceDetectionEngine(MODEL_PATH)
     
