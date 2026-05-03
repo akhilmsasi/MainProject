@@ -1,123 +1,132 @@
 import cv2
-import collections
-import time
-import datetime
 import os
+import datetime
+import time
+import collections
 import threading
-from ai_engine import MultiObjectMotionDetectionEngine  # <--- Use the new Engine
-from visualize import visualize
-from utils import (
-    get_db_connection, 
-    OUTPUT_PATH, 
-    insert_incident_record,
-    RecordingState,
-    TVM_LOCATIONS
-)
+import firebase_admin
+from firebase_admin import db, storage
+from ai_engine import MultiObjectMotionDetectionEngine
 
-# Configuration - UPDATE THESE PATHS TO MATCH YOUR COMPUTER
+# --- CONFIGURATION ---
+# Initialize Firebase
+if not firebase_admin._apps:
+    cred = firebase_admin.credentials.Certificate("serviceAccountKey.json")
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://fir-7211b-default-rtdb.firebaseio.com/',
+        # Use the URL you just found in the console:
+        'storageBucket': 'fir-7211b.firebasestorage.app' 
+    })
+
+# Paths
+OUTPUT_PATH = r"C:/xampp/htdocs/Videos"
 PROTOTXT_PATH = r"C:\Users\ASHNA\Documents\MainProject\MainProject\models\deploy.prototxt"
 MODEL_PATH = r"C:\Users\ASHNA\Documents\MainProject\MainProject\models\mobilenet_iter_73000.caffemodel"
 
+# Settings
 FPS = 30
-BUFFER_DURATION = 30 
+BUFFER_SECONDS = 30
+RECORD_SECONDS = 30
+TOTAL_DURATION = BUFFER_SECONDS + RECORD_SECONDS
 
-def save_and_sync_worker(frames, event_name, event_type, username):
-    """Background task to save MP4 and update SQL/Firebase."""
+def save_and_sync_worker(frames, event_name, event_type, user_id):
+    """Saves video locally, uploads to Firebase Storage, and updates DB."""
     try:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        record_id = f"{event_name}_{timestamp}"
-        local_path = os.path.join(OUTPUT_PATH, f"{record_id}.mp4")
+        filename = f"{event_name}_{timestamp}.mp4"
+        local_path = os.path.join(OUTPUT_PATH, filename)
         
-        h, w, _ = frames[0].shape
-        out = cv2.VideoWriter(local_path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (w, h))
-        for f in frames: out.write(f)
-        out.release()
+        # 1. Save Video Locally
+        if frames:
+            h, w, _ = frames[0].shape
+            out = cv2.VideoWriter(local_path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (w, h))
+            for f in frames: out.write(f)
+            out.release()
+            print(f"✅ Video Saved locally: {local_path}")
+
+        # 2. Setup Firebase
+        event_key = f"{event_name}_{timestamp}"
+        db_ref = db.reference(f'users/{user_id}/Events/{event_key}')
         
-        import random
-        loc = random.choice(TVM_LOCATIONS)
-        insert_incident_record(
-            record_id=record_id, incident_dt=datetime.datetime.now(),
-            title=f"Alert: {event_name}", locationLat=loc[0], locationLong=loc[1],
-            placeCityName=loc[2], roadName=loc[3], 
-            vehicleSpeed=random.uniform(20, 50),
-            incidentType=int(event_type), gear=0, 
-            filepath=local_path, username=username
-        )
-        print(f"✅ Event Saved & Synced: {record_id}")
+        # Initial DB Status
+        db_ref.set({
+            "title": event_name,
+            "incidentType": int(event_type),
+            "upload_progress": 0,
+            "fileUploadedStatus": 0,
+            "filepath": "Uploading..."
+        })
+
+        # 3. Upload to Firebase Storage
+        bucket = storage.bucket()
+        blob = bucket.blob(f"Videos/{user_id}/{filename}")
+        
+        print(f"🚀 Starting Upload: {filename}")
+        blob.upload_from_filename(local_path)
+        
+        # Make public and get URL
+        blob.make_public()
+        video_url = blob.public_url
+        
+        # 4. Finalize DB Sync
+        db_ref.update({
+            "filepath": video_url,
+            "fileUploadedStatus": 100,
+            "upload_progress": 100
+        })
+        print(f"✅ Upload Complete. URL: {video_url}")
+
     except Exception as e:
         print(f"❌ Worker Error: {e}")
 
-def run_service(username="akhil"):
-    # Initialize the new Caffe-based Engine
-    ai_logic = MultiObjectMotionDetectionEngine(prototxt_path=PROTOTXT_PATH, model_path=MODEL_PATH)
-    
+def run_service():
+    ai_logic = MultiObjectMotionDetectionEngine(PROTOTXT_PATH, MODEL_PATH)
     cap = cv2.VideoCapture(0)
-    history_buffer = collections.deque(maxlen=FPS * BUFFER_DURATION)
+    history_buffer = collections.deque(maxlen=FPS * BUFFER_SECONDS)
     
     is_recording = False
-    event_start_time = 0
+    recording_start_time = 0
     event_frames = []
     current_name, current_type = "", 0
 
-    print(f"🚀 Service Running for {username} with Caffe Model...")
+    print("🚀 Monitoring Active...")
 
     try:
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret: break
 
-            # 1. Use new AI Logic (Returns list of detections)
+            history_buffer.append(frame.copy())
             detections = ai_logic.detect_objects(frame)
+            motion_detected = len(detections) > 0
             
-            # Check if any detection is a 'person'
-            person_detected = any(d['class_name'].lower() == 'person' for d in detections)
-            
-            # 2. Add boxes (visualize)
-            annotated_frame = visualize(frame, detections)
-            history_buffer.append(annotated_frame.copy())
-
-            if not is_recording:
-                # Check DB for manual trigger
-                db_trigger = False
-                try:
-                    conn = get_db_connection()
-                    cursor = conn.cursor(dictionary=True)
-                    cursor.execute("SELECT status, EventType FROM recording_status LIMIT 1")
-                    row = cursor.fetchone()
-                    cursor.close()
-                    conn.close()
-                    if row and row['status'] == 1:
-                        db_trigger = True
-                        current_type = row['EventType']
-                        current_name = RecordingState(current_type).name
-                except: pass
-
-                if person_detected or db_trigger:
-                    is_recording = True
-                    event_start_time = time.time()
-                    if person_detected:
-                        current_name, current_type = "AI_PERSON_DETECT", 2
-                    
-                    print(f"🔔 TRIGGER: {current_name}")
-                    # Capture the "Past" 30 seconds
-                    event_frames = list(history_buffer)
-            else:
-                # Capture the "Future" 30 seconds
-                event_frames.append(annotated_frame.copy())
+            if not is_recording and motion_detected:
+                is_recording = True
+                recording_start_time = time.time()
+                event_frames = list(history_buffer)
                 
-                if time.time() - event_start_time >= BUFFER_DURATION:
-                    # Save the full 60s video (buffered past + captured future)
-                    threading.Thread(
-                        target=save_and_sync_worker, 
-                        args=(list(event_frames), current_name, current_type, username)
-                    ).start()
-                    is_recording = False
+                obj = detections[0]
+                current_name = f"MOTION_{obj['class_name']}"
+                current_type = 2
+                print(f"🎥 Event Triggered: {current_name}")
 
-            cv2.imshow("Secure360 Monitor", annotated_frame)
+            elif is_recording:
+                event_frames.append(frame.copy())
+                
+                if (time.time() - recording_start_time) >= TOTAL_DURATION:
+                    threading.Thread(
+                        target=save_and_sync_worker,
+                        args=(list(event_frames), current_name, current_type, "akhil")
+                    ).start()
+                    
+                    is_recording = False
+                    event_frames = []
+
+            cv2.imshow("Secure360 - Live View", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'): break
     finally:
         cap.release()
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    run_service("akhil")
+    run_service()
