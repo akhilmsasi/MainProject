@@ -3,7 +3,9 @@ import subprocess
 import datetime
 import sys
 import os
-import uuid  # Added for RandomID generation
+import uuid
+import time
+import threading
 
 # Check and install requirements if needed
 try:
@@ -39,7 +41,7 @@ class Secure360GUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Secure360 Cloud & SQL Control")
-        self.root.geometry("400x750")
+        self.root.geometry("400x800")
         
         self.fm = FirebaseManager()
         self.processes = []
@@ -90,7 +92,7 @@ class Secure360GUI:
         self.event_menu.config(width=25, state=tk.DISABLED)
         self.event_menu.pack(pady=5)
 
-        # --- 4.5: Crash Position Dropdown ---
+        # --- 5. Crash Configuration (Location Logic) ---
         tk.Label(root, text="Select Crash Position:", font=('Arial', 9, 'bold')).pack(pady=(10, 0))
         self.crash_pos_options = ["Near", "Far"]
         self.selected_crash_pos = tk.StringVar(root)
@@ -99,23 +101,22 @@ class Secure360GUI:
         self.crash_pos_menu.config(width=25, state=tk.DISABLED)
         self.crash_pos_menu.pack(pady=5)
 
-        # --- 4.6: Send Crash Button ---
         self.btn_send_crash = tk.Button(root, text="SEND CRASH", bg="#d9534f", fg="white",
                                        font=('Arial', 9, 'bold'), width=30, height=2,
                                        command=self.send_crash_action, state=tk.DISABLED)
         self.btn_send_crash.pack(pady=10)
 
-        # --- 5. Recording Toggle ---
+        # --- 6. Manual Recording Toggle ---
         self.btn_record = tk.Button(root, text="START RECORDING", bg="gray", fg="white", 
                                     command=self.toggle_manual_record, width=30, height=2, state=tk.DISABLED)
         self.btn_record.pack(pady=10)
 
-        # --- 6. Test Firebase Connection Button ---
+        # --- 7. Cloud Controls ---
         self.btn_test = tk.Button(root, text="SEND SAMPLE DATA TO CLOUD", bg="#e1e1e1", 
                                   command=self.test_firebase_connection, width=30)
         self.btn_test.pack(pady=5)
 
-        # --- 6.5 Event Status Checkboxes ---
+        # --- 8. Event Status Checkboxes ---
         self.checkbox_frame = tk.Frame(root)
         self.checkbox_frame.pack(pady=5)
         
@@ -135,7 +136,7 @@ class Secure360GUI:
         self.chk5 = tk.Checkbutton(self.checkbox_frame, text="ALARM SYSTEM", variable=self.chk_var5, command=lambda: self.toggle_event_status(5, self.chk_var5))
         self.chk5.grid(row=1, column=1, padx=5, pady=2, sticky="w")
 
-        # --- 7. User Details Section ---
+        # --- 9. User Details Section ---
         tk.Label(root, text="User Details (from DB):", font=('Arial', 9, 'bold')).pack(pady=(15, 0))
         self.user_frame = tk.Frame(root)
         self.user_frame.pack(fill=tk.BOTH, expand=False, padx=10, pady=5)
@@ -157,7 +158,7 @@ class Secure360GUI:
         self.btn_refresh_users = tk.Button(root, text="Refresh Users", command=self.refresh_user_details, width=30)
         self.btn_refresh_users.pack(pady=2)
 
-        # Startup logic
+        # --- Startup Initialization ---
         try:
             initialize_database()
         except Exception as e:
@@ -168,45 +169,75 @@ class Secure360GUI:
         self.refresh_user_details()
         self.load_event_statuses()
         self._poll_recording_status()
+        
+        # Start the Auto-Delete Background Loop
+        self.start_crash_cleanup_loop()
 
-    # --- NEW: Send Crash logic ---
+    def start_crash_cleanup_loop(self):
+        """Continuously checks for CrashEvents older than 2 minutes and removes them."""
+        def _cleanup_worker():
+            print("Auto-Delete Daemon: Monitoring CrashEvents for expiration...")
+            while True:
+                try:
+                    # Get all crash events
+                    events = db_ref.child('CrashEvents').get()
+                    if events:
+                        now = datetime.datetime.now()
+                        for event_id, data in events.items():
+                            ts_str = data.get('timestamp')
+                            if ts_str:
+                                # Convert ISO string back to datetime
+                                event_time = datetime.datetime.fromisoformat(ts_str)
+                                duration = (now - event_time).total_seconds()
+                                
+                                if duration > 120: # 2 Minutes
+                                    db_ref.child('CrashEvents').child(event_id).delete()
+                                    print(f"Auto-Delete: Node {event_id} removed (expired {int(duration)}s ago)")
+                except Exception as e:
+                    print(f"Cleanup Loop Warning: {e}")
+                
+                time.sleep(30) # Run check every 30 seconds
+
+        t = threading.Thread(target=_cleanup_worker, daemon=True)
+        t.start()
+
     def send_crash_action(self):
-        """Action for the Send Crash button: Logs location and triggers system recording."""
+        """Action for the Send Crash button: sets system status and logs location."""
         username = self.get_selected_username()
         if not username:
             messagebox.showwarning("No Selection", "Please select a user from the list.")
             return
         
         pos = self.selected_crash_pos.get()
-        # Set coordinates based on CET College
+        # Location Logic Relative to CET
         if pos == "Near":
             lat, lon = 8.5485, 76.9015
         else:
             lat, lon = 8.4875, 76.9486
 
         try:
-            # 1. Standard procedure: Update SQL/Firebase user status (Event type 6 = Crash)
+            # Update user recording status (standard functionality)
             update_user_recording_status(
                 username, 
                 status=1, 
-                event_type=6, 
+                event_type=6, # EventType 6 = Crash
                 gear=self.gear_options[self.selected_gear.get()]
             )
             
-            # 2. Specific CrashEvents logging
+            # Specific CrashEvents logic
             random_id = str(uuid.uuid4())[:8]
             crash_data = {
                 "lat": lat,
                 "long": lon,
                 "username": username,
-                "timestamp": str(datetime.datetime.now())
+                "timestamp": datetime.datetime.now().isoformat()
             }
             
-            # Write to "CrashEvents"->RandomID
+            # Push to CrashEvents -> RandomID
             db_ref.child('CrashEvents').child(random_id).set(crash_data)
 
-            print(f"CRASH SENT: {username} | ID: {random_id} | {pos} ({lat}, {lon})")
-            messagebox.showinfo("Success", f"Crash event {random_id} logged at {pos} position.")
+            print(f"CRASH ALERT: {username} | {pos} | ID: {random_id}")
+            messagebox.showinfo("Success", f"Crash event {random_id} sent successfully.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to send crash: {e}")
 
@@ -233,12 +264,10 @@ class Secure360GUI:
             except: pass
 
             def _finish_shutdown(procs):
-                import time
                 time.sleep(1.5)
                 for p in procs:
                     if p.poll() is None: p.terminate()
 
-            import threading
             threading.Thread(target=_finish_shutdown, args=(list(self.processes),), daemon=True).start()
 
             self.is_on = False
