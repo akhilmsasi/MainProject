@@ -14,6 +14,7 @@ from utils import (
     TVM_LOCATIONS,
     resume_pending_uploads
 )
+
 # Configuration
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "blaze_face_short_range.tflite")
 FPS = 30
@@ -36,6 +37,25 @@ def _set_db_recording_status(status, event_type=0):
         conn.close()
     except Exception as e:
         print(f"[RecordingService] DB status update failed: {e}")
+
+def is_event_enabled(event_type):
+    """
+    Checks the 'event_status' table. 
+    Uses rollback() to ensure it sees live changes from the GUI/PHPMyAdmin.
+    """
+    try:
+        conn = get_db_connection()
+        # CRITICAL: Forces the connection to see external updates
+        conn.rollback() 
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT Eventstatus FROM event_status WHERE Eventtype = %s", (int(event_type),))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return row is not None and row['Eventstatus'] == 1
+    except Exception as e:
+        print(f"[RecordingService] Feature gate check failed: {e}")
+        return False
 
 def save_and_sync_worker(frames, event_name, event_type, username):
     """Background task to save MP4 and update SQL/Firebase."""
@@ -71,7 +91,7 @@ def run_service(username="akhil"):
     # Resume any pending uploads
     resume_pending_uploads()
     
-    # Initialize the AI from the other file
+    # Initialize the AI logic
     ai_logic = FaceDetectionEngine(MODEL_PATH)
     
     cap = cv2.VideoCapture(0)
@@ -82,38 +102,39 @@ def run_service(username="akhil"):
     event_frames = []
     current_name, current_type = "", 0
 
-    # --- Camera-on overlay state (display only, never saved) ---
-    _frame_count = 0          # used to pulse the indicator dot
-    _dot_bright = True        # toggles between bright/dark red
+    # --- Camera-on overlay state ---
+    _frame_count = 0
+    _dot_bright = True
 
-    # Reset any stale recording status left from a previous session
+    # Reset recording status
     _set_db_recording_status(0, 0)
 
-    print(f"🚀 Service Running for {username}...")
+    print(f"🚀 Secure360 Service Running for {username}...")
 
     try:
         while cap.isOpened():
-            # Graceful shutdown: GUI wrote the stop flag → exit cleanly
             if os.path.exists(STOP_FLAG):
                 os.remove(STOP_FLAG)
-                print("🛑 Stop flag detected — shutting down recording service.")
+                print("🛑 Shutdown requested.")
                 break
 
             ret, frame = cap.read()
             if not ret: break
 
-            # 1. Use the AI Logic from ai_engine.py
+            # 1. Constant AI Monitoring
             face_detected, detection_result = ai_logic.check_for_face(frame)
             
-            # 2. Add boxes (visualize)
+            # 2. Visualization
             annotated_frame = visualize(frame, detection_result)
             history_buffer.append(annotated_frame.copy())
 
             if not is_recording:
-                # Check DB for manual trigger
+                # 3. Fresh check for DB triggers (Honk/Brake/Alarm)
                 db_trigger = False
+                manual_event_type = 0
                 try:
                     conn = get_db_connection()
+                    conn.rollback() # Ensure we see fresh manual triggers
                     cursor = conn.cursor(dictionary=True)
                     cursor.execute("SELECT status, EventType FROM recording_status LIMIT 1")
                     row = cursor.fetchone()
@@ -121,76 +142,68 @@ def run_service(username="akhil"):
                     conn.close()
                     if row and row['status'] == 1:
                         db_trigger = True
-                        current_type = row['EventType']
-                        current_name = RecordingState(current_type).name
+                        manual_event_type = row['EventType']
                 except: pass
 
-                if face_detected or db_trigger:
-                    is_recording = True
-                    event_start_time = time.time()
-                    if face_detected:
-                        current_name, current_type = "AI_FACE_DETECT", 2
+                # --- DYNAMIC FEATURE GATING ---
+                
+                # Case 1: Face Detection Logic
+                if face_detected:
+                    # Always monitor, but only record if DB says enabled (Type 2)
+                    if is_event_enabled(2):
+                        is_recording = True
+                        current_type = 2
+                        current_name = "AI_FACE_DETECT"
+                
+                # Case 2: Manual Trigger Logic (Types 3, 4, 5)
+                elif db_trigger:
+                    # Only record if the triggered event is enabled in DB
+                    if is_event_enabled(manual_event_type):
+                        is_recording = True
+                        current_type = manual_event_type
+                        current_name = RecordingState(current_type).name
+                    else:
+                        print(f"⚠️ Trigger {manual_event_type} ignored: Feature is disabled in DB.")
+                        _set_db_recording_status(0, 0) # Clear the trigger
 
-                    print(f"🔔 TRIGGER: {current_name}")
-                    # Tell the GUI we are now recording
+                if is_recording:
+                    event_start_time = time.time()
+                    print(f"🔔 RECORDING INITIATED: {current_name}")
                     _set_db_recording_status(1, current_type)
-                    # Capture the "Past" 30 seconds
                     event_frames = list(history_buffer)
+            
             else:
-                # Capture the "Future" 30 seconds
                 event_frames.append(annotated_frame.copy())
 
                 if time.time() - event_start_time >= BUFFER_DURATION:
-                    # Save the full 60s video (buffered past + captured future)
                     threading.Thread(
                         target=save_and_sync_worker,
                         args=(list(event_frames), current_name, current_type, username)
                     ).start()
                     is_recording = False
-                    # Tell the GUI recording has finished
                     _set_db_recording_status(0, 0)
 
-            # ── Camera-on overlay (display copy only – NOT saved to video) ──
+            # ── Camera-on overlay ──
             display_frame = annotated_frame.copy()
-
             h_f, w_f = display_frame.shape[:2]
-            dot_cx, dot_cy = w_f - 18, 18
-            dot_r = 8
-            font       = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 0.45
-            thickness  = 1
+            dot_cx, dot_cy, dot_r = w_f - 18, 18, 8
+            font, font_scale, thickness = cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1
 
             if is_recording:
-                # Pulsing red dot + "REC LIVE"
                 _frame_count += 1
-                if _frame_count % 15 == 0:
-                    _dot_bright = not _dot_bright
-                dot_color  = (0, 30, 220) if _dot_bright else (0, 10, 120)  # BGR red
-                label      = "REC LIVE"
-                text_color = dot_color
+                if _frame_count % 15 == 0: _dot_bright = not _dot_bright
+                dot_color = (0, 30, 220) if _dot_bright else (0, 10, 120)
+                label, text_color = "REC LIVE", dot_color
             else:
-                # Static green dot + "CAM ON"
-                _frame_count = 0
-                _dot_bright  = True
-                dot_color  = (0, 180, 0)   # BGR green
-                label      = "CAM ON"
-                text_color = dot_color
+                _frame_count, _dot_bright = 0, True
+                dot_color, label, text_color = (0, 180, 0), "CAM ON", (0, 180, 0)
 
-            # Glow ring behind dot
             cv2.circle(display_frame, (dot_cx, dot_cy), dot_r + 3, (20, 20, 20), -1)
-            # Main dot
             cv2.circle(display_frame, (dot_cx, dot_cy), dot_r, dot_color, -1)
-
-            # Label with dark background pill
             (tw, th), _ = cv2.getTextSize(label, font, font_scale, thickness)
-            tx = dot_cx - dot_r - tw - 6
-            ty = dot_cy + th // 2
-            cv2.rectangle(display_frame,
-                          (tx - 3, ty - th - 3),
-                          (tx + tw + 3, ty + 3),
-                          (30, 30, 30), -1)
+            tx, ty = dot_cx - dot_r - tw - 6, dot_cy + th // 2
+            cv2.rectangle(display_frame, (tx - 3, ty - th - 3), (tx + tw + 3, ty + 3), (30, 30, 30), -1)
             cv2.putText(display_frame, label, (tx, ty), font, font_scale, text_color, thickness, cv2.LINE_AA)
-            # ── end overlay ──
 
             cv2.imshow("Secure360 Monitor", display_frame)
             if cv2.waitKey(1) & 0xFF == ord('q'): break
