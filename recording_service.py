@@ -42,8 +42,13 @@ def is_event_enabled(event_type):
     """
     Checks the 'event_status' table. 
     Uses rollback() to ensure it sees live changes from the GUI/PHPMyAdmin.
+    For normal and crash events, always return True.
     """
     try:
+        # Always active for normal and crash events
+        if event_type in [1, 3]:  # Assuming 1 = Normal, 3 = Crash
+            return True
+
         conn = get_db_connection()
         # CRITICAL: Forces the connection to see external updates
         conn.rollback() 
