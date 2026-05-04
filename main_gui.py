@@ -3,6 +3,7 @@ import subprocess
 import datetime
 import sys
 import os
+import uuid  # Added for RandomID generation
 
 # Check and install requirements if needed
 try:
@@ -89,7 +90,7 @@ class Secure360GUI:
         self.event_menu.config(width=25, state=tk.DISABLED)
         self.event_menu.pack(pady=5)
 
-        # --- NEW: Crash Position Dropdown (Near/Far) ---
+        # --- 4.5: Crash Position Dropdown ---
         tk.Label(root, text="Select Crash Position:", font=('Arial', 9, 'bold')).pack(pady=(10, 0))
         self.crash_pos_options = ["Near", "Far"]
         self.selected_crash_pos = tk.StringVar(root)
@@ -98,7 +99,7 @@ class Secure360GUI:
         self.crash_pos_menu.config(width=25, state=tk.DISABLED)
         self.crash_pos_menu.pack(pady=5)
 
-        # --- NEW: Send Crash Button ---
+        # --- 4.6: Send Crash Button ---
         self.btn_send_crash = tk.Button(root, text="SEND CRASH", bg="#d9534f", fg="white",
                                        font=('Arial', 9, 'bold'), width=30, height=2,
                                        command=self.send_crash_action, state=tk.DISABLED)
@@ -170,27 +171,45 @@ class Secure360GUI:
 
     # --- NEW: Send Crash logic ---
     def send_crash_action(self):
-        """Action for the Send Crash button."""
+        """Action for the Send Crash button: Logs location and triggers system recording."""
         username = self.get_selected_username()
         if not username:
             messagebox.showwarning("No Selection", "Please select a user from the list.")
             return
         
         pos = self.selected_crash_pos.get()
+        # Set coordinates based on CET College
+        if pos == "Near":
+            lat, lon = 8.5485, 76.9015
+        else:
+            lat, lon = 8.4875, 76.9486
+
         try:
-            # Assuming event_type 6 represents 'Crash' in your system
-            sql_ok, fb_ok = update_user_recording_status(
+            # 1. Standard procedure: Update SQL/Firebase user status (Event type 6 = Crash)
+            update_user_recording_status(
                 username, 
                 status=1, 
                 event_type=6, 
                 gear=self.gear_options[self.selected_gear.get()]
             )
-            print(f"CRASH ALERT: {username} | Position: {pos}")
-            messagebox.showinfo("Success", f"Crash alert ({pos}) sent successfully.")
+            
+            # 2. Specific CrashEvents logging
+            random_id = str(uuid.uuid4())[:8]
+            crash_data = {
+                "lat": lat,
+                "long": lon,
+                "username": username,
+                "timestamp": str(datetime.datetime.now())
+            }
+            
+            # Write to "CrashEvents"->RandomID
+            db_ref.child('CrashEvents').child(random_id).set(crash_data)
+
+            print(f"CRASH SENT: {username} | ID: {random_id} | {pos} ({lat}, {lon})")
+            messagebox.showinfo("Success", f"Crash event {random_id} logged at {pos} position.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to send crash: {e}")
 
-    # --- Updated Power Toggle to include new elements ---
     def toggle_power(self):
         if not self.is_on:
             initialize_database()
@@ -199,8 +218,8 @@ class Secure360GUI:
             self.btn_record.config(state=tk.NORMAL, bg="blue")
             self.event_menu.config(state=tk.NORMAL)
             self.gear_menu.config(state=tk.NORMAL)
-            self.crash_pos_menu.config(state=tk.NORMAL) # Enable dropdown
-            self.btn_send_crash.config(state=tk.NORMAL) # Enable button
+            self.crash_pos_menu.config(state=tk.NORMAL)
+            self.btn_send_crash.config(state=tk.NORMAL)
             
             script_dir = os.path.dirname(os.path.abspath(__file__))
             p1 = subprocess.Popen([sys.executable, os.path.join(script_dir, 'recording_service.py')])
@@ -227,11 +246,10 @@ class Secure360GUI:
             self.btn_record.config(state=tk.DISABLED, bg="gray")
             self.event_menu.config(state=tk.DISABLED)
             self.gear_menu.config(state=tk.DISABLED)
-            self.crash_pos_menu.config(state=tk.DISABLED) # Disable dropdown
-            self.btn_send_crash.config(state=tk.DISABLED) # Disable button
+            self.crash_pos_menu.config(state=tk.DISABLED)
+            self.btn_send_crash.config(state=tk.DISABLED)
             self._last_poll_status = False
 
-    # (Remaining original methods below for background polling, sync, and DB fetch)
     def load_event_statuses(self):
         try:
             conn = get_db_connection()
