@@ -58,7 +58,7 @@ def is_event_enabled(event_type):
         return False
 
 def save_and_sync_worker(frames, event_name, event_type, username):
-    """Background task to save MP4 and update SQL/Firebase."""
+    """Background task to save MP4, update SQL, and start Firebase upload."""
     try:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         record_id = f"{event_name}_{timestamp}"
@@ -68,18 +68,31 @@ def save_and_sync_worker(frames, event_name, event_type, username):
         out = cv2.VideoWriter(local_path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (w, h))
         for f in frames: out.write(f)
         out.release()
+
+        # Log the file path to verify it was saved correctly
+        if os.path.exists(local_path):
+            print(f"✅ File saved successfully: {local_path}")
+        else:
+            print(f"❌ File not found after saving: {local_path}")
+            return
         
         import random
         loc = random.choice(TVM_LOCATIONS)
+        # Extract only the filename from the local_path
+        video_filename = os.path.basename(local_path)
         insert_incident_record(
             record_id=record_id, incident_dt=datetime.datetime.now(),
             title=f"Alert: {event_name}", locationLat=loc[0], locationLong=loc[1],
             placeCityName=loc[2], roadName=loc[3], 
             vehicleSpeed=random.uniform(20, 50),
             incidentType=int(event_type), gear=0, 
-            filepath=local_path, username=username
+            filepath=video_filename, username=username
         )
         print(f"✅ Event Saved & Synced: {record_id}")
+
+        # Start uploading to Firebase immediately
+        threading.Thread(target=upload_video_to_cloud, args=(record_id, local_path, username), daemon=True).start()
+        print(f"🚀 Upload started for {record_id}")
     except Exception as e:
         print(f"❌ Worker Error: {e}")
 

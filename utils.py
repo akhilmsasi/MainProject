@@ -807,8 +807,12 @@ def upload_video_to_cloud(record_id, local_filepath, username):
         if not db_ref:
             print(f"upload_video_to_cloud: db_ref not initialized, cannot upload {record_id}")
             return
-            
+
         event_ref = db_ref.child('users').child(str(username)).child('Events').child(str(record_id))
+
+        # Prepend OUTPUT_PATH to local_filepath if it is not an absolute path
+        if not os.path.isabs(local_filepath):
+            local_filepath = os.path.join(OUTPUT_PATH, local_filepath)
 
         if not os.path.isfile(local_filepath):
             print(f"Upload worker: file not found {local_filepath}")
@@ -885,7 +889,7 @@ def upload_video_to_cloud(record_id, local_filepath, username):
             if not ok_update:
                 print(f"Warning: final RTDB update failed for {record_id} after retries")
             try:
-                update_incident_upload_status(record_id, progress=100, status=2, filepath=storage_url)
+                update_incident_upload_status(record_id, progress=100, status=2)  # Do not overwrite filepath
             except Exception as sqle:
                 print(f"SQL final update failed for {record_id}: {sqle}")
 
@@ -903,7 +907,7 @@ def upload_video_to_cloud(record_id, local_filepath, username):
                 if not ok_update:
                     print(f"Warning: final RTDB update failed for {record_id} after fallback upload")
                 try:
-                    update_incident_upload_status(record_id, progress=100, status=2, filepath=storage_url)
+                    update_incident_upload_status(record_id, progress=100, status=2)  # Do not overwrite filepath
                 except Exception as sqle:
                     print(f"SQL final update failed for {record_id} after fallback: {sqle}")
                 print(f" Upload (fallback) complete for {record_id} -> {storage_url}")
