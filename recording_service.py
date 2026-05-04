@@ -40,13 +40,14 @@ def _set_db_recording_status(status, event_type=0):
 
 def is_event_enabled(event_type):
     """
-    Checks the 'event_status' table to see if a specific feature is active.
-    Returns True only if Eventstatus is 1 (Enabled).
+    Checks the 'event_status' table. 
+    Uses rollback() to ensure it sees live changes from the GUI/PHPMyAdmin.
     """
     try:
         conn = get_db_connection()
+        # CRITICAL: Forces the connection to see external updates
+        conn.rollback() 
         cursor = conn.cursor(dictionary=True)
-        # Query based on the values: FACE DETECTION-2, HONK-3, HARD BRAKING-4, ALARM-5
         cursor.execute("SELECT Eventstatus FROM event_status WHERE Eventtype = %s", (int(event_type),))
         row = cursor.fetchone()
         cursor.close()
@@ -101,39 +102,39 @@ def run_service(username="akhil"):
     event_frames = []
     current_name, current_type = "", 0
 
-    # --- Camera-on overlay state (display only, never saved) ---
-    _frame_count = 0          # used to pulse the indicator dot
-    _dot_bright = True        # toggles between bright/dark red
+    # --- Camera-on overlay state ---
+    _frame_count = 0
+    _dot_bright = True
 
-    # Reset any stale recording status left from a previous session
+    # Reset recording status
     _set_db_recording_status(0, 0)
 
     print(f"🚀 Secure360 Service Running for {username}...")
 
     try:
         while cap.isOpened():
-            # Graceful shutdown: GUI wrote the stop flag → exit cleanly
             if os.path.exists(STOP_FLAG):
                 os.remove(STOP_FLAG)
-                print("🛑 Stop flag detected — shutting down recording service.")
+                print("🛑 Shutdown requested.")
                 break
 
             ret, frame = cap.read()
             if not ret: break
 
-            # 1. AI Logic for face detection
+            # 1. Constant AI Monitoring
             face_detected, detection_result = ai_logic.check_for_face(frame)
             
-            # 2. Add visualization boxes
+            # 2. Visualization
             annotated_frame = visualize(frame, detection_result)
             history_buffer.append(annotated_frame.copy())
 
             if not is_recording:
-                # Check DB for manual trigger from GUI or hardware sensors
+                # 3. Fresh check for DB triggers (Honk/Brake/Alarm)
                 db_trigger = False
                 manual_event_type = 0
                 try:
                     conn = get_db_connection()
+                    conn.rollback() # Ensure we see fresh manual triggers
                     cursor = conn.cursor(dictionary=True)
                     cursor.execute("SELECT status, EventType FROM recording_status LIMIT 1")
                     row = cursor.fetchone()
@@ -144,51 +145,48 @@ def run_service(username="akhil"):
                         manual_event_type = row['EventType']
                 except: pass
 
-                # --- TRIGGER LOGIC WITH FEATURE GATING ---
+                # --- DYNAMIC FEATURE GATING ---
                 
-                # Check Face Detection (Type 2)
-                if face_detected and is_event_enabled(2):
-                    is_recording = True
-                    current_type = 2
-                    current_name = "AI_FACE_DETECT"
+                # Case 1: Face Detection Logic
+                if face_detected:
+                    # Always monitor, but only record if DB says enabled (Type 2)
+                    if is_event_enabled(2):
+                        is_recording = True
+                        current_type = 2
+                        current_name = "AI_FACE_DETECT"
                 
-                # Check Manual/Sensor Triggers (Honk=3, Braking=4, Alarm=5)
+                # Case 2: Manual Trigger Logic (Types 3, 4, 5)
                 elif db_trigger:
+                    # Only record if the triggered event is enabled in DB
                     if is_event_enabled(manual_event_type):
                         is_recording = True
                         current_type = manual_event_type
                         current_name = RecordingState(current_type).name
                     else:
-                        # Event is triggered but the feature is currently disabled in event_status
-                        print(f"⚠️ Trigger for Event {manual_event_type} received but feature is DISABLED.")
-                        _set_db_recording_status(0, 0) # Reset DB status to avoid looping
+                        print(f"⚠️ Trigger {manual_event_type} ignored: Feature is disabled in DB.")
+                        _set_db_recording_status(0, 0) # Clear the trigger
 
                 if is_recording:
                     event_start_time = time.time()
                     print(f"🔔 RECORDING INITIATED: {current_name}")
                     _set_db_recording_status(1, current_type)
-                    # Capture the "Past" 30 seconds from buffer
                     event_frames = list(history_buffer)
             
             else:
-                # Capture the "Future" 30 seconds
                 event_frames.append(annotated_frame.copy())
 
                 if time.time() - event_start_time >= BUFFER_DURATION:
-                    # Save the full 60s video (past buffer + future capture)
                     threading.Thread(
                         target=save_and_sync_worker,
                         args=(list(event_frames), current_name, current_type, username)
                     ).start()
                     is_recording = False
-                    # Notify GUI that recording is finished
                     _set_db_recording_status(0, 0)
 
-            # ── Camera-on overlay (Not saved to MP4) ──
+            # ── Camera-on overlay ──
             display_frame = annotated_frame.copy()
             h_f, w_f = display_frame.shape[:2]
-            dot_cx, dot_cy = w_f - 18, 18
-            dot_r = 8
+            dot_cx, dot_cy, dot_r = w_f - 18, 18, 8
             font, font_scale, thickness = cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1
 
             if is_recording:
